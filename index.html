@@ -84,7 +84,9 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 .lv.c1{background:var(--blue)} .lv.c2{background:var(--bad)} .lv.c3{background:var(--warn);color:#111}
 .lv b{display:block;font-family:"Chakra Petch",sans-serif;font-size:26px;line-height:1.1}
 .lv span{font-weight:700;font-size:15px}
-.lv .done{position:absolute;right:10px;top:8px;background:#fff;color:var(--good);border-radius:50%;width:26px;height:26px;display:grid;place-items:center;font-weight:900}
+.lv .done{position:absolute;right:8px;top:6px;font-style:normal;font-size:24px;line-height:1;animation:glow 1.6s ease-in-out infinite;filter:drop-shadow(0 0 3px #ffe14d) drop-shadow(0 0 7px #ffc400)}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 2px #ffe14d) drop-shadow(0 0 5px #ffc400)}50%{filter:drop-shadow(0 0 5px #fff27a) drop-shadow(0 0 13px #ffc400)}}
+@media (prefers-reduced-motion: reduce){.lv .done{animation:none}}
 
 .result h2{font-size:34px}
 .result.win h2{color:var(--good)} .result.fail h2{color:var(--bad)}
@@ -252,6 +254,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
       <h2 style="color:#fff;margin:0;font-size:30px;font-weight:900;text-shadow:0 2px 4px rgba(0,0,0,.5)">選擇關卡</h2>
       <button class="btn plain center" data-act="menu" style="font-size:16px;padding:10px 16px">回主選單</button>
     </div>
+    <div class="keys" id="lvMsg" role="status" style="font-size:15px;font-weight:700;min-height:1.4em">第一次玩只能從 1-1 開始，過關後會依序解鎖下一關。</div>
     <div id="lvList"></div>
   </div>
 </section>
@@ -261,6 +264,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
   <div class="stack levels">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
       <h2 style="color:#fff;margin:0;font-size:30px;font-weight:900;text-shadow:0 2px 4px rgba(0,0,0,.5)">選擇車輛</h2>
+      <button class="btn center hidden" id="vehPlay" data-act="vehPlay" style="font-size:16px;padding:10px 16px;margin-left:auto"></button>
       <button class="btn plain center" data-act="menu" style="font-size:16px;padding:10px 16px">回主選單</button>
     </div>
     <div class="vgrid" id="vehList"></div>
@@ -463,6 +467,7 @@ const distM=g=>(g.fy-g.L.stopLineY)/10;
 /* ---------- laws (道路交通管理處罰條例) ---------- */
 const LAW={
   red:{d:'闖紅燈',a:'道路交通管理處罰條例 第53條第1項',f:'新臺幣 1,800～5,400 元'},
+  noChange:{d:'跨越禁止變換車道線（雙白線）變換車道',a:'道路交通管理處罰條例 第48條第2款',f:'新臺幣 600～1,800 元'},
   redRight:{d:'紅燈右轉',a:'道路交通管理處罰條例 第53條第2項',f:'新臺幣 600～1,800 元'},
   line:{d:'紅燈越過停止線（不遵守標線指示）',a:'道路交通管理處罰條例 第60條第2項第3款',f:'新臺幣 900～1,800 元'},
   sign:{d:'轉彎或變換車道未依規定使用方向燈',a:'道路交通管理處罰條例 第42條',f:'新臺幣 1,200～3,600 元'},
@@ -501,6 +506,7 @@ const LAW={
 const BIKE_LAW={
   red:{d:'慢車不依號誌指示（闖紅燈）',a:'道路交通管理處罰條例 第74條第1項第1款',f:'新臺幣 300～1,200 元'},
   redRight:{d:'慢車不依號誌指示（紅燈右轉）',a:'道路交通管理處罰條例 第74條第1項第1款',f:'新臺幣 300～1,200 元'},
+  noChange:{d:'慢車不依標線（雙白線）指示變換方向',a:'道路交通管理處罰條例 第74條第1項第1款',f:'新臺幣 300～1,200 元'},
   line:{d:'慢車不依標線（停止線）指示',a:'道路交通管理處罰條例 第74條第1項第1款',f:'新臺幣 300～1,200 元'},
   stopSign:{d:'慢車不依「停」標誌指示',a:'道路交通管理處罰條例 第74條第1項第1款',f:'新臺幣 300～1,200 元'},
   sign:{d:'慢車不依規定轉彎（未以手勢表示方向）',a:'道路交通管理處罰條例 第73條第1項第3款',f:'新臺幣 300～1,200 元'},
@@ -556,6 +562,7 @@ function blockReason(L,sp){
 
 /* ---------- helpers for turns ---------- */
 const SIG30=STOP_Y+300; // 30 m before the stop line
+const DBL=200;          // double white line (no lane change) length before the stop line
 function turnSignalCheck(g,dir){
   const c=g.car,n=dir==='left'?'左':'右',k=dir==='left'?'Q':'E';
   if(c.signal!==dir){g.fail(c.spec.slow?`${n}轉時沒有用手勢表示方向（按 ${k}）。`:`${n}轉時沒有打${n}轉方向燈（按 ${k}）。`,'sign');return false;}
@@ -1071,21 +1078,24 @@ function step(g,dt){
     if(Math.abs(c.x)<=W&&(L.map==='straight'||Math.abs(c.y)>W)){if((dy<-0.6&&c.x<-6)||(dy>0.6&&c.x>6))wrong=true;}
     else if(L.map==='cross'&&Math.abs(c.y)<=W){if((dx<-0.6&&c.y>6)||(dx>0.6&&c.y<-6))wrong=true;}
     if(wrong&&!c.spec.tiny)return g.fail('逆向行駛！車子跨過中線開進對向車道。','wrongWay');
-    // lane change detection (all levels)
-    let seg=null,lat=0;
-    if(Math.abs(c.x)<=W+BAYW+5&&(L.map==='straight'||Math.abs(c.y)>W+FIL+10)){seg='v';lat=Math.abs(c.x);}
-    else if(L.map==='cross'&&Math.abs(c.y)<=W){seg='h';lat=Math.abs(c.y);}
+  }
+  // lane change detection (all levels)
+  {let seg=null,lat=0,along=0,toward=false;
+    if(Math.abs(c.x)<=W+BAYW+5&&(L.map==='straight'||Math.abs(c.y)>=STOP_Y)&&(dy<0?c.x>-2:c.x<2)){seg='v';lat=Math.abs(c.x);along=Math.abs(c.y);toward=(c.y>0&&dy<-0.3)||(c.y<0&&dy>0.3);}
+    else if(L.map==='cross'&&Math.abs(c.y)<=W&&Math.abs(c.x)>=STOP_Y&&(dx<0?c.y<2:c.y>-2)){seg='h';lat=Math.abs(c.y);along=Math.abs(c.x);toward=(c.x>0&&dx<-0.3)||(c.x<0&&dx>0.3);}
     if(seg){
-      if(g.laneSeg!==seg){g.laneSeg=seg;g.lane=lat>W?'bay':lat<LANE?'in':'out';}
+      const aligned=L.map==='straight'||(seg==='v'?Math.abs(dy):Math.abs(dx))>0.95;
+      if(g.laneSeg!==seg){if(aligned){g.laneSeg=seg;g.lane=lat>W?'bay':lat<LANE?'in':'out';}}
       else{let nl=g.lane;
         if(lat>W+2)nl='bay';else if(lat<LANE-4)nl='in';else if(lat>LANE+4&&lat<=W)nl='out';
         if(nl!==g.lane){const prev=g.lane;g.lane=nl;
+          if(prev!=='bay'&&nl!=='bay'&&!c.spec.tiny&&L.map==='cross'&&toward&&along>=STOP_Y&&along<=STOP_Y+DBL)
+            return g.fail('在雙白線（禁止變換車道線）範圍內變換車道。就算打了方向燈也不行，要在雙白線開始之前換好車道。','noChange');
           if(prev!=='bay'&&nl!=='bay'&&!c.spec.noSig){const need=nl==='in'?'left':'right';
             if(c.signal!==need)return g.fail(c.spec.slow?`變換方向時沒有用手勢表示（按 ${need==='left'?'Q':'E'}）。`:`變換車道時沒有打${need==='left'?'左轉方向燈（按 Q）':'右轉方向燈（按 E）'}。所有關卡換車道都必須先打方向燈。`,'sign');
             g.sigCancel=1.2;}}}
-    }
-    if((c.spec.slow||c.spec.ped)&&!L.bikeAnyLane&&g.lane==='in'){g.bikeInT=(g.bikeInT||0)+dt;if(g.bikeInT>(c.spec.ped?3:2))return g.fail(c.spec.ped?'沒有人行道時，行人要靠路邊走，不要走在內側車道。':'腳踏車應靠右側路邊行駛，不要騎在內側車道。','keepRight');}else g.bikeInT=0;
-  }else g.laneSeg=null;
+      if((c.spec.slow||c.spec.ped)&&!L.bikeAnyLane&&g.lane==='in'){g.bikeInT=(g.bikeInT||0)+dt;if(g.bikeInT>(c.spec.ped?3:2))return g.fail(c.spec.ped?'沒有人行道時，行人要靠路邊走，不要走在內側車道。':'腳踏車應靠右側路邊行駛，不要騎在內側車道。','keepRight');}else g.bikeInT=0;
+    }else g.laneSeg=null;}
   }
   if(L.map==='cross'&&g.exited&&Math.max(Math.abs(c.x),Math.abs(c.y))>W+FIL+70)return g.win(L.winMsg||'過關！');
   if(L.finishY!=null&&c.y<L.finishY&&(!L.canFinish||L.canFinish(g)))return g.win(L.winMsg||'過關！');
@@ -1122,8 +1132,9 @@ function zebra(y,h){ctx.fillStyle=PAINT;for(let x=-W+5;x<W-5;x+=15)ctx.fillRect(
 function drawArm(stopSign){
   ctx.fillStyle=YEL;ctx.fillRect(-4,STOP_Y,2.5,WORLD-STOP_Y);ctx.fillRect(1.5,STOP_Y,2.5,WORLD-STOP_Y);
   ctx.fillStyle=PAINT;
-  ctx.fillRect(LANE-1.5,STOP_Y+5,3,70);ctx.fillRect(-LANE-1.5,STOP_Y+5,3,70);
-  for(let y=STOP_Y+110;y<WORLD;y+=60){ctx.fillRect(LANE-1.5,y,3,30);ctx.fillRect(-LANE-1.5,y,3,30);}
+  ctx.fillRect(LANE-4,STOP_Y+5,2.5,DBL-5);ctx.fillRect(LANE+1.5,STOP_Y+5,2.5,DBL-5);   // approach: double white = no lane change
+  for(let y=STOP_Y+DBL+30;y<WORLD;y+=60)ctx.fillRect(LANE-1.5,y,3,30);
+  ctx.fillRect(-LANE-1.5,STOP_Y+5,3,70);for(let y=STOP_Y+110;y<WORLD;y+=60)ctx.fillRect(-LANE-1.5,y,3,30);
   ctx.fillRect(W-6,W+FIL,2.5,WORLD-W-FIL);ctx.fillRect(-W+3.5,W+FIL,2.5,WORLD-W-FIL);
   ctx.fillRect(4,STOP_Y,W-8,5);
   ctx.save();ctx.translate(0,W+5);zebra(0,STOP_Y-W-12);ctx.restore();
@@ -1497,24 +1508,27 @@ function buildVehicles(){const box=$('#vehList');box.innerHTML='';
     b.onclick=()=>{vehIdx=i;saveVeh();G=newGame(cur);buildVehicles();progText();const nb=$('#vehList').children[i];nb&&nb.focus({preventScroll:true});};
     box.appendChild(b);});
   requestAnimationFrame(()=>[...box.children].forEach((b,i)=>drawPreview(b.querySelector('canvas'),VEHICLES[i])));}
-function showVehicles(){show('scrVehicles');setMode('vehicles');buildVehicles();}
+let vehBack=false;
+function showVehicles(fromLv){vehBack=!!fromLv;const b=$('#vehPlay');b.classList.toggle('hidden',!vehBack);if(vehBack)b.textContent=`用這台車重新挑戰 ${curSet[cur].practice?curSet[cur].name:curSet[cur].id}`;show('scrVehicles');setMode('vehicles');buildVehicles();}
 function toMenu(){cur=0;curSet=LEVELS;G=newGame(0,LEVELS);progText();show('scrMenu');setMode('menu');}
 function isLocked(L){return !!(L.paid&&!unlocked);}
+function seqLocked(i){return i>0&&!cleared.has(LEVELS[i].id)&&!cleared.has(LEVELS[i-1].id);}
+function seqMsg(i){return `先通過 ${LEVELS[i-1].id}「${LEVELS[i-1].name}」才能解鎖 ${LEVELS[i].id}。`;}
 function buildLevels(){
   const box=$('#lvList');box.innerHTML='';
   for(const ch of [1,2,3,4]){
     const sec=document.createElement('div');sec.className='chapter';sec.innerHTML=`<h3>${CHAPTERS[ch]}</h3>`;
     const grid=document.createElement('div');grid.className='grid';
-    LEVELS.forEach((L,i)=>{if(L.chapter!==ch)return;const b=document.createElement('button');const lk=isLocked(L);b.className='lv c'+ch+(lk?' locked':'');
-      b.innerHTML=`<b>${L.id}</b><span>${L.name}</span>${lk?'<i class="lock" aria-label="未解鎖">🔒</i>':cleared.has(L.id)?'<i class="done" aria-label="已過關">✓</i>':''}`;
-      b.onclick=()=>lk?showShop():loadLevel(i,false,LEVELS);grid.appendChild(b);});
+    LEVELS.forEach((L,i)=>{if(L.chapter!==ch)return;const b=document.createElement('button');const sq=seqLocked(i),lk=sq||isLocked(L);b.className='lv c'+ch+(lk?' locked':'');
+      b.innerHTML=`<b>${L.id}</b><span>${L.name}</span>${lk?'<i class="lock" aria-label="未解鎖">🔒</i>':cleared.has(L.id)?'<i class="done" aria-label="已過關">🍗</i>':''}`;
+      b.onclick=()=>sq?($('#lvMsg').textContent='🔒 '+seqMsg(i)):lk?showShop():loadLevel(i,false,LEVELS);grid.appendChild(b);});
     sec.appendChild(grid);box.appendChild(sec);
   }
 }
-function showLevels(){buildLevels();show('scrLevels');setMode('levels');}
+function showLevels(){$('#lvMsg').textContent=cleared.size?'過關後會依序解鎖下一關；過關的關卡會出現發光的雞腿。':'第一次玩只能從 1-1 開始，過關後會依序解鎖下一關。';buildLevels();show('scrLevels');setMode('levels');}
 function buildPractice(){const box=$('#pracList');box.innerHTML='';
   PRACTICE.forEach((P,i)=>{const b=document.createElement('button');b.className='lv'+(i===0?' full':'');
-    b.innerHTML=`<b style="font-size:20px">${P.name}</b><span style="font-weight:500;font-size:13px;opacity:.9">${i===0?'四個項目一次考完':P.rules[P.rules.length-1]}</span>${cleared.has('P:'+P.id)?'<i class="done" aria-label="已完成">✓</i>':''}`;
+    b.innerHTML=`<b style="font-size:20px">${P.name}</b><span style="font-weight:500;font-size:13px;opacity:.9">${i===0?'四個項目一次考完':P.rules[P.rules.length-1]}</span>${cleared.has('P:'+P.id)?'<i class="done" aria-label="已完成">🍗</i>':''}`;
     b.onclick=()=>loadLevel(i,false,PRACTICE);box.appendChild(b);});}
 function showPractice(){buildPractice();show('scrPractice');setMode('practice');}
 function showShop(){$('#shopPrice').textContent=SHOP.price;$('#shopMsg').textContent=SHOP.payUrl?'':'付款連結尚未開放，已購買者請直接輸入解鎖碼。';$('#shopMsg').className='msg';
@@ -1529,6 +1543,7 @@ $('#btnUnlock').onclick=async()=>{const m=$('#shopMsg');const code=$('#codeIn').
   catch(e){m.textContent='這個瀏覽器無法驗證解鎖碼，請改用 https 網址開啟。';m.className='msg bad';}};
 function loadLevel(i,direct,set){
   if(set)curSet=set;
+  if(curSet===LEVELS&&seqLocked(i)){showLevels();$('#lvMsg').textContent='🔒 '+seqMsg(i);return;}
   if(isLocked(curSet[i])){showShop();return;}
   cur=i;G=newGame(i);const L=G.L;
   $('#hId').textContent=L.id;$('#hName').textContent=L.name;$('#hGoal').textContent=L.goal;
@@ -1567,7 +1582,7 @@ function showResult(g){
   const btns=[];
   if(win&&!last)btns.push([g.L.practice?'下一項練習':isLocked(curSet[cur+1])?'下一關（需解鎖）':'下一關','next','']);
   btns.push(['再試一次','retry',win&&!last?'plain':'']);
-  btns.push(g.L.practice?['練習選單','practice','plain']:['選擇關卡','levels','plain']);btns.push(['主選單','menu','plain']);
+  btns.push(g.L.practice?['練習選單','practice','plain']:['選擇關卡','levels','plain']);if(!win)btns.push(['選擇車輛','vehLv','plain']);btns.push(['主選單','menu','plain']);
   $('#rBtns').innerHTML=btns.map(([t,a,c])=>`<button class="btn center ${c}" data-act="${a}">${t}</button>`).join('');
   show('scrResult');setMode('result');
 }
@@ -1577,6 +1592,8 @@ document.addEventListener('click',e=>{
   if(a==='restart')loadLevel(0,false,LEVELS);
   else if(a==='levels')showLevels();
   else if(a==='vehicles')showVehicles();
+  else if(a==='vehLv')showVehicles(true);
+  else if(a==='vehPlay')loadLevel(cur,false,curSet);
   else if(a==='ad')watchAd();
   else if(a==='ctrl'){ctrlMode=ctrlMode==='screen'?'car':'screen';try{localStorage.setItem(CKEY,ctrlMode);}catch(e){}joyLabels();progText();}
   else if(a==='quit')quit();
