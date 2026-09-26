@@ -3,7 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>路口駕訓班</title>
+<title>雞腿換駕照</title>
+<meta name="theme-color" content="#0e6b47">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍗</text></svg>">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="雞腿換駕照">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
@@ -122,21 +130,51 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 .sig .on{color:#ffb020;text-shadow:0 0 12px #ffb020}
 #hInfo{background:rgba(14,18,22,.82);color:#fff;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;max-width:70vw}
 
-/* ---------- touch ---------- */
-.touch{display:none}
+/* ---------- touch (landscape phone) ---------- */
+.touch{display:none;position:fixed;inset:0;z-index:11;pointer-events:none}
+.keys .tb{display:none}
 @media (hover:none) and (pointer:coarse){
-  .touch{display:flex}
-  .hud-bottom{bottom:calc(env(safe-area-inset-bottom,0px) + 104px)}
-  .keys .kb{display:none}
+  .touch{display:block}
+  .keys .kb{display:none} .keys .tb{display:inline}
+  .hud-top{left:calc(env(safe-area-inset-left,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 8px)}
+  .goalbox{max-width:52vw;padding:6px 10px}
+  #hGoal{font-size:12px;line-height:1.4}
+  .tl{right:calc(env(safe-area-inset-right,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 62px);padding:6px;gap:5px}
+  .tl i{width:24px;height:24px;font-size:17px}
+  .hud-bottom{left:50%;right:auto;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);flex-wrap:nowrap;justify-content:center}
+  .hud-bottom .sig{display:none}
+  .speedo{min-width:78px;padding:4px 10px 6px} #hSpd{font-size:28px}
+  #hInfo{font-size:12px;padding:8px 10px;max-width:30vw}
 }
-.touch{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);justify-content:space-between;align-items:flex-end;padding:0 12px;z-index:11;pointer-events:none;gap:8px}
-.touch .pad{display:flex;gap:8px;pointer-events:auto}
-.touch button{appearance:none;border:0;width:72px;height:80px;border-radius:16px;background:rgba(14,18,22,.78);color:#fff;font:inherit;font-size:26px;font-weight:900;touch-action:none}
-.touch button.act{background:rgba(255,199,44,.95);color:#111}
-.touch .mid button{width:54px;height:54px;font-size:15px}
-.touch .gas{background:#1c8f52}.touch .brk{background:#b3261b}
-.touch button{font-size:18px}
-@media (prefers-reduced-motion: reduce){.btn:active,.lv:active{transform:none}}
+.joyzone{position:absolute;left:0;top:28%;bottom:0;width:44%;pointer-events:auto;touch-action:none}
+.joy{position:absolute;width:140px;height:140px;margin:-70px 0 0 -70px;border-radius:50%;
+  left:calc(env(safe-area-inset-left,0px) + 100px);top:calc(100% - 96px - env(safe-area-inset-bottom,0px));
+  background:rgba(14,18,22,.42);border:3px solid rgba(255,255,255,.4)}
+.joy.act{background:rgba(14,18,22,.55);border-color:rgba(255,199,44,.8)}
+.knob{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;
+  background:radial-gradient(circle at 38% 35%,#ffe07a,#ffc72c 55%,#d99a00);box-shadow:0 4px 10px rgba(0,0,0,.4);pointer-events:none}
+.jl{position:absolute;left:50%;transform:translateX(-50%);color:#fff;font-size:11px;font-weight:900;text-shadow:0 1px 2px #000;pointer-events:none;white-space:nowrap}
+.jl.u{top:6px}.jl.d{bottom:6px}.jl.l{left:14px;top:50%;transform:translateY(-50%)}.jl.r{left:auto;right:14px;top:50%;transform:translateY(-50%)}
+.sigpad{position:absolute;right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;gap:16px;pointer-events:auto}
+.sigpad button{appearance:none;border:3px solid rgba(255,255,255,.35);width:86px;height:86px;border-radius:50%;background:rgba(14,18,22,.62);color:#fff;
+  font:inherit;font-size:30px;font-weight:900;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;touch-action:none}
+.sigpad button small{font-size:12px}
+.sigpad button.armed{border-color:#ffb020}
+.sigpad button.on{background:#ffb020;color:#111;box-shadow:0 0 22px #ffb020}
+.rotate{position:fixed;inset:0;z-index:40;background:var(--sign);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px}
+.rotate.hidden{display:none}
+.rotate .ph{font-size:64px;animation:turn 1.8s ease-in-out infinite}
+.rotate b{font-size:26px;font-weight:900}
+.rotate p{margin:0;opacity:.9;line-height:1.6}
+@keyframes turn{0%,25%{transform:rotate(0)}55%,100%{transform:rotate(90deg)}}
+@media (max-height:520px) and (orientation:landscape){
+  #scrMenu .stack{max-width:860px;display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:16px 22px}
+  #scrMenu .keys{grid-column:1 / -1}
+  .board h1{font-size:clamp(34px,8vh,56px)}
+  .board{padding:18px 22px 16px}
+  .btn{padding:11px 18px;font-size:18px}
+}
+@media (prefers-reduced-motion: reduce){.btn:active,.lv:active{transform:none}.rotate .ph{animation:none;transform:rotate(90deg)}}
 </style>
 </head>
 <body>
@@ -157,18 +195,20 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 </div>
 
 <div id="touch" class="touch hidden">
-  <div class="pad"><button data-k="left" aria-label="左轉向">◀</button><button data-k="right" aria-label="右轉向">▶</button></div>
-  <div class="pad mid"><button data-sig="left" aria-label="左方向燈">⇦燈</button><button data-sig="right" aria-label="右方向燈">燈⇨</button></div>
-  <div class="pad"><button data-k="down" class="brk">煞車</button><button data-k="up" class="gas">油門</button></div>
+  <div class="joyzone" id="joyzone" aria-label="方向搖桿">
+    <div class="joy" id="joy"><span class="jl u">油門</span><span class="jl d">煞車</span><span class="jl l">左</span><span class="jl r">右</span><div class="knob" id="knob"></div></div>
+  </div>
+  <div class="sigpad"><button data-sig="left" id="tsL" aria-label="左方向燈">◀<small>左燈</small></button><button data-sig="right" id="tsR" aria-label="右方向燈">▶<small>右燈</small></button></div>
 </div>
+<div id="rotate" class="rotate hidden"><div class="ph">📱</div><b>請將手機橫放</b><p>左手用蘑菇頭控制車子<br>右手按按鈕打方向燈</p></div>
 
 <!-- Main menu -->
 <section class="screen show" id="scrMenu">
   <div class="stack">
     <div class="board">
       <span class="route">駕訓挑戰</span>
-      <span class="arrow">↑</span>
-      <h1>路口<br>駕訓班</h1>
+      <span class="arrow">🍗</span>
+      <h1>雞腿<br>換駕照</h1>
       <p><span id="lvCount">12</span> 個小關卡：看懂號誌、打方向燈、禮讓行人、路邊停車，一關一關練到熟。</p>
     </div>
     <nav class="menu">
@@ -177,7 +217,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
       <button class="btn" data-act="vehicles">選擇車輛 <small id="vehTxt"></small></button>
       <button class="btn red" data-act="quit">離開遊戲</button>
     </nav>
-    <div class="keys"><span class="kb">操作：<kbd>↑</kbd>/<kbd>W</kbd> 油門　<kbd>↓</kbd>/<kbd>S</kbd> 煞車（停住後按住倒車）　<kbd>←</kbd><kbd>→</kbd> 轉向　<kbd>Q</kbd>/<kbd>E</kbd> 左／右方向燈　<kbd>Esc</kbd> 暫停</span></div>
+    <div class="keys"><span class="kb">操作：<kbd>↑</kbd>/<kbd>W</kbd> 油門　<kbd>↓</kbd>/<kbd>S</kbd> 煞車（停住後按住倒車）　<kbd>←</kbd><kbd>→</kbd> 轉向　<kbd>Q</kbd>/<kbd>E</kbd> 左／右方向燈　<kbd>Esc</kbd> 暫停</span><span class="tb">請橫放手機。左手蘑菇頭：往上油門、往下煞車（停住後繼續往下是倒車）、左右轉向；右手兩顆按鈕打左／右方向燈。</span></div>
   </div>
 </section>
 
@@ -520,14 +560,16 @@ function makeCar(x,y,a,sp){return {x,y,a,v:0,steer:0,len:sp.len,wid:sp.wid,color
 function updateCar(c,dt,inp){
   const sp=c.spec,MAXV=sp.maxV,ACC=sp.acc,BRK=sp.brk,DRAG=24,REV=-60;
   c.braking=false;
-  if(inp.down){
-    if(c.v>0){c.v=Math.max(0,c.v-BRK*dt);c.braking=true;c.hold=0;}
-    else{c.hold+=dt;c.braking=true;if(c.hold>0.45)c.v=Math.max(REV,c.v-ACC*0.6*dt);}
+  const up=inp.up||0,dn=inp.down||0;let coast=up<=0.05&&dn<=0.05;
+  if(dn>0.05){
+    if(c.v>0){c.v=Math.max(0,c.v-BRK*dn*dt);c.braking=true;c.hold=0;}
+    else{c.hold+=dt;c.braking=true;if(c.hold>0.45)c.v=Math.max(REV,c.v-ACC*0.6*dn*dt);}
   }else c.hold=0;
-  if(inp.up){if(c.v<0)c.v=Math.min(0,c.v+BRK*dt);else c.v=Math.min(MAXV,c.v+ACC*(1-c.v/(MAXV*1.15))*dt);}
-  if(!inp.up&&!inp.down){const d=DRAG*dt;c.v=Math.abs(c.v)<=d?0:c.v-Math.sign(c.v)*d;}
+  if(up>0.05){if(c.v<0)c.v=Math.min(0,c.v+BRK*up*dt);
+    else{const f=up-c.v/(MAXV*1.15);if(f>0)c.v=Math.min(MAXV,c.v+ACC*f*dt);else coast=true;}}
+  if(coast){const d=DRAG*dt;c.v=Math.abs(c.v)<=d?0:c.v-Math.sign(c.v)*d;}
   const maxS=sp.steer/(1+Math.abs(c.v)/260);
-  const tgt=((inp.right?1:0)-(inp.left?1:0))*maxS;
+  const tgt=clamp(inp.steer||0,-1,1)*maxS;
   c.steer+=clamp(tgt-c.steer,-3.2*dt,3.2*dt);
   c.a+=c.v/sp.wb*Math.tan(c.steer)*dt;
   c.x+=Math.sin(c.a)*c.v*dt;c.y-=Math.cos(c.a)*c.v*dt;
@@ -550,7 +592,8 @@ function newGame(i){
 }
 function step(g,dt){
   const L=g.L,c=g.car;g.t+=dt;
-  updateCar(c,dt,{up:keyOn('up'),down:keyOn('down'),left:keyOn('left'),right:keyOn('right')});
+  const kx=(keyOn('right')?1:0)-(keyOn('left')?1:0);
+  updateCar(c,dt,{up:Math.max(keyOn('up')?1:0,Math.max(0,-joy.y)),down:Math.max(keyOn('down')?1:0,Math.max(0,joy.y)),steer:clamp(kx+joy.x,-1,1)});
   if(Math.abs(c.v)>25)g.moved=true;
   g.stopT=Math.abs(c.v)<1.5?g.stopT+dt:0;
   if(c.signal&&Math.abs(angDiff(c.a,c.sigA0))>1.1&&Math.abs(c.steer)<0.08)c.signal=null; // auto-cancel after a turn
@@ -805,6 +848,8 @@ function updateHud(g){
   hud.spd.textContent=Math.round(KMH(c.v));
   hud.speedo.classList.toggle('over',!!(L.limit&&g.inZone&&KMH(c.v)>L.limit-2));
   hud.sigL.classList.toggle('on',c.signal==='left'&&b);hud.sigR.classList.toggle('on',c.signal==='right'&&b);
+  tsL.classList.toggle('on',c.signal==='left'&&b);tsR.classList.toggle('on',c.signal==='right'&&b);
+  tsL.classList.toggle('armed',c.signal==='left');tsR.classList.toggle('armed',c.signal==='right');
   if(g.light){hud.tl.classList.remove('hidden');hud.lr.classList.toggle('on',!!g.light.r);hud.ly.classList.toggle('on',!!g.light.y);hud.lg.classList.toggle('on',!!g.light.g);
     hud.la.classList.toggle('hidden',!L.arrow);hud.la.classList.toggle('on',!!g.light.left);}
   else hud.tl.classList.add('hidden');
@@ -816,11 +861,11 @@ function updateHud(g){
 }
 
 /* ---------- input ---------- */
-const keys={},touch={};
-const keyOn=k=>!!(keys[k]||touch[k]);
+const keys={},joy={x:0,y:0,id:null,cx:0,cy:0};
+const keyOn=k=>!!keys[k];
 const KEYMAP={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
 function toggleSig(s){const c=G.car;c.signal=c.signal===s?null:s;c.sigA0=c.a;}
-function clearInput(){for(const k in keys)keys[k]=false;for(const k in touch)touch[k]=false;document.querySelectorAll('.touch .act').forEach(b=>b.classList.remove('act'));}
+function clearInput(){for(const k in keys)keys[k]=false;joyReset();}
 addEventListener('keydown',e=>{
   const k=KEYMAP[e.code];if(k){keys[k]=true;if(mode==='play')e.preventDefault();}
   if(e.repeat)return;
@@ -837,14 +882,24 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{const k=KEYMAP[e.code];if(k)keys[k]=false;});
 addEventListener('blur',clearInput);
-document.querySelectorAll('.touch button').forEach(b=>{
-  b.addEventListener('pointerdown',e=>{e.preventDefault();if(mode!=='play')return;
-    if(b.dataset.k){touch[b.dataset.k]=true;b.classList.add('act');try{b.setPointerCapture(e.pointerId);}catch(_){}}
-    else if(b.dataset.sig)toggleSig(b.dataset.sig);});
-  const up=()=>{if(b.dataset.k){touch[b.dataset.k]=false;b.classList.remove('act');}};
-  b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
-  b.addEventListener('contextmenu',e=>e.preventDefault());
-});
+const zone=$('#joyzone'),joyEl=$('#joy'),knob=$('#knob'),JR=56;
+function joyReset(){joy.x=joy.y=0;joy.id=null;knob.style.transform='';joyEl.style.left='';joyEl.style.top='';joyEl.classList.remove('act');}
+function joyMove(e){let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy;const d=Math.hypot(dx,dy);if(d>JR){dx*=JR/d;dy*=JR/d;}
+  knob.style.transform=`translate(${dx}px,${dy}px)`;
+  const dz=v=>Math.abs(v)<0.18?0:(v-Math.sign(v)*0.18)/0.82;joy.x=dz(dx/JR);joy.y=dz(dy/JR);}
+zone.addEventListener('pointerdown',e=>{e.preventDefault();if(mode!=='play'||joy.id!==null)return;
+  joy.id=e.pointerId;try{zone.setPointerCapture(e.pointerId);}catch(_){}
+  const r=zone.getBoundingClientRect();joy.cx=e.clientX;joy.cy=e.clientY;
+  joyEl.style.left=(e.clientX-r.left)+'px';joyEl.style.top=(e.clientY-r.top)+'px';joyEl.classList.add('act');joyMove(e);});
+zone.addEventListener('pointermove',e=>{if(e.pointerId===joy.id){e.preventDefault();joyMove(e);}});
+['pointerup','pointercancel','lostpointercapture'].forEach(t=>zone.addEventListener(t,e=>{if(e.pointerId===joy.id)joyReset();}));
+document.querySelectorAll('.sigpad button').forEach(b=>{
+  b.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='play')toggleSig(b.dataset.sig);});
+  b.addEventListener('contextmenu',e=>e.preventDefault());});
+const tsL=$('#tsL'),tsR=$('#tsR'),rotEl=$('#rotate');
+const coarse=window.matchMedia?matchMedia('(pointer: coarse)'):{matches:false};
+const needRotate=()=>coarse.matches&&innerHeight>innerWidth;
+if('serviceWorker' in navigator&&location.protocol==='https:'){addEventListener('load',()=>{navigator.serviceWorker.register('service-worker.js').catch(()=>{});});}
 
 /* ---------- screens ---------- */
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('show',s.id===id));
@@ -892,7 +947,7 @@ function loadLevel(i,direct){
   $('#iVeh').textContent=`駕駛車輛：${VEHICLES[vehIdx].name}（可在主選單更換）`;
   show('scrIntro');setMode('intro');
 }
-function startPlay(){show(null);setMode('play');if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}
+function startPlay(){show(null);setMode('play');try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{});}catch(_){}if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}
 function retry(){loadLevel(cur,true);}
 function pause(){if(mode!=='play')return;show('scrPause');setMode('pause');}
 function resume(){show(null);setMode('play');document.activeElement&&document.activeElement.blur&&document.activeElement.blur();}
@@ -934,7 +989,9 @@ $('#btnPause').onclick=pause;
 let last=performance.now();
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;
-  if(mode==='play'&&G&&!G.over){for(let i=0;i<2&&!G.over;i++)step(G,dt/2);}
+  const rot=mode==='play'&&needRotate();
+  if(rotEl.classList.contains('hidden')===rot){rotEl.classList.toggle('hidden',!rot);if(rot)joyReset();}
+  if(mode==='play'&&!rot&&G&&!G.over){for(let i=0;i<2&&!G.over;i++)step(G,dt/2);}
   if(G){updateCam(G,dt);render(G);if(mode==='play'||mode==='ended'||mode==='pause')updateHud(G);}
   requestAnimationFrame(loop);
 }
