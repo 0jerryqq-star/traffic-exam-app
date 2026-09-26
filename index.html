@@ -133,6 +133,14 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 .hudbtns{margin-left:auto;display:flex;gap:6px}
 .hb{pointer-events:auto;appearance:none;border:0;background:rgba(14,18,22,.8);color:#fff;border-radius:12px;width:46px;height:46px;font-size:22px;font-weight:900;cursor:pointer;font-family:inherit}
 .hb:disabled{opacity:.35;cursor:default}
+.hb svg{display:block;margin:auto}
+.hb.on{background:var(--warn);color:#111}
+.gpanel{position:absolute;right:calc(env(safe-area-inset-right,0px) + 76px);top:calc(env(safe-area-inset-top,0px) + 66px);width:min(300px,46vw);background:rgba(14,18,22,.84);color:#fff;border-radius:12px;padding:8px 10px;border:2px dashed rgba(255,255,255,.5)}
+.gtop{display:flex;align-items:center;gap:6px}
+.gtop b{font-size:13px;margin-right:auto}
+.gb{pointer-events:auto;appearance:none;border:0;border-radius:8px;background:rgba(255,255,255,.16);color:#fff;font:inherit;font-weight:900;font-size:13px;padding:6px 9px;cursor:pointer}
+.gb:focus-visible{outline:2px solid var(--warn)}
+#gCap{font-size:12.5px;line-height:1.5;margin-top:6px;color:#e8edf2;min-height:1.5em}
 .hb:focus-visible{outline:3px solid var(--warn)}
 
 .tl{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 66px);background:#15171a;border:3px solid #2e3238;border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:7px}
@@ -207,8 +215,9 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="hud" class="hidden">
   <div class="hud-top">
     <div class="goalbox"><div class="t"><span class="lvid" id="hId">1-1</span><span id="hName"></span></div><div id="hGoal"></div></div>
-    <div class="hudbtns"><button class="hb" id="zOut" aria-label="拉遠視角">−</button><button class="hb" id="zIn" aria-label="拉近視角">＋</button><button class="hb" id="btnPause" aria-label="暫停">II</button></div>
+    <div class="hudbtns"><button class="hb" id="gBtn" aria-label="虛擬教練車示範" title="虛擬教練車"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="3 2.2"/><rect x="8.5" y="6.5" width="7" height="3" rx="1" fill="currentColor" opacity=".7"/></svg></button><button class="hb" id="zOut" aria-label="拉遠視角">−</button><button class="hb" id="zIn" aria-label="拉近視角">＋</button><button class="hb" id="btnPause" aria-label="暫停">II</button></div>
   </div>
+  <div class="gpanel hidden" id="gPanel"><div class="gtop"><b>虛擬教練車</b><button class="gb" id="gReplay">⟲ 重播</button><button class="gb" id="gSpd">1×</button></div><div id="gCap"></div></div>
   <div class="tl hidden" id="tl"><i class="r"></i><i class="y"></i><i class="g"></i><i class="a hidden">←</i></div>
   <div class="hud-bottom">
     <div class="speedo" id="speedo"><span id="hSpd">0</span><small>km/h</small></div>
@@ -243,7 +252,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
       <button class="btn plain" data-act="ad">觀看廣告 <small>5 秒</small></button>
       <button class="btn red" data-act="quit">離開遊戲</button>
     </nav>
-    <div class="keys"><span class="kb">操作：<kbd>↑</kbd>/<kbd>W</kbd> 油門　<kbd>↓</kbd>/<kbd>S</kbd> 煞車（停住後按住倒車）　<kbd>←</kbd><kbd>→</kbd> 轉向　<kbd>Q</kbd>/<kbd>E</kbd> 左／右方向燈　<kbd>Space</kbd> 煞車　<kbd>Esc</kbd> 暫停　<kbd>＋</kbd><kbd>−</kbd> 視角。「畫面方向」操控時，按方向鍵就往畫面上那個方向開；往反方向按是煞車，停住後繼續按住就倒車</span><span class="tb">請橫放手機。左手蘑菇頭：往哪推，車子就往畫面上的哪個方向開；往車子反方向推是煞車，停住後繼續推就倒車。右手：左右方向燈，中間是煞車。（可在主選單改成「車頭方向」操控）</span></div>
+    <div class="keys"><span class="kb">操作：<kbd>↑</kbd>/<kbd>W</kbd> 油門　<kbd>↓</kbd>/<kbd>S</kbd> 煞車（停住後按住倒車）　<kbd>←</kbd><kbd>→</kbd> 轉向　<kbd>Q</kbd>/<kbd>E</kbd> 左／右方向燈　<kbd>Space</kbd> 煞車　<kbd>Esc</kbd> 暫停　<kbd>＋</kbd><kbd>−</kbd> 視角　<kbd>G</kbd> 虛擬教練車示範。「畫面方向」操控時，按方向鍵就往畫面上那個方向開；往反方向按是煞車，停住後繼續按住就倒車</span><span class="tb">請橫放手機。左手蘑菇頭：往哪推，車子就往畫面上的哪個方向開；往車子反方向推是煞車，停住後繼續推就倒車。右手：左右方向燈，中間是煞車。（可在主選單改成「車頭方向」操控）</span></div>
   </div>
 </section>
 
@@ -1016,14 +1025,14 @@ function updateCar(c,dt,inp){
 /* ---------- game state ---------- */
 let G=null,cur=0,mode='menu',curSet=LEVELS;
 const cam={x:0,y:0};
-function newGame(i,set){
+function newGame(i,set,opt){opt=opt||{};
   const L=(set||curSet)[i];
-  const g={L,t:0,car:makeCar(L.start.x,L.start.y,L.start.a||0,VEHICLES[vehIdx]),moved:false,stopT:0,crossed:false,inBox:false,exited:null,over:false,
+  const g={L,t:0,car:makeCar(L.start.x,L.start.y,L.start.a||0,opt.spec||VEHICLES[vehIdx]),moved:false,stopT:0,crossed:false,inBox:false,exited:null,over:false,
     obstacles:[],streams:[],peds:[],light:null,fy:0,msg:''};
-  g.fail=(m,law)=>{if(g.over)return;g.over='fail';if(g.car.spec.tiny)m=m.replace(/車頭|車身|車子/g,'你');g.msg=m;g.law=lawFor(g,law);endLevel(g);};
-  g.win=m=>{if(g.over)return;g.over='win';g.msg=typeof m==='function'?m(g):m;endLevel(g);};
+  g.fail=(m,law)=>{if(g.over)return;g.over='fail';if(g.car.spec.tiny)m=m.replace(/車頭|車身|車子/g,'你');g.msg=m;g.law=lawFor(g,law);if(!opt.headless)endLevel(g);};
+  g.win=m=>{if(g.over)return;g.over='win';g.msg=typeof m==='function'?m(g):m;if(!opt.headless)endLevel(g);};
   if(L.highway)g.car.mul=1.45;
-  g.blocked=blockReason(L,VEHICLES[vehIdx]);
+  g.blocked=blockReason(L,g.car.spec);
   if((g.car.spec.plane||g.car.spec.train||g.car.spec.ship)&&!L.start.a)g.car.y+=g.car.len/2-22;
   if(g.car.spec.tiny&&!L.practice&&!L.highway&&!L.start.a){if(L.start.x>LANE)g.car.x=W-12;g.car.y=L.stopLineY!=null?Math.min(g.car.y,L.stopLineY+260):g.car.y-300;}
   if(L.start.v)g.car.v=L.highway?Math.min(L.start.v,(hwLimit(g)-6)/0.36):L.start.v;
@@ -1031,12 +1040,12 @@ function newGame(i,set){
   g.prewarm=true;g.streams.forEach(st=>{for(let k=0;k<1200;k++)stepStream(st,1/60,g);});g.prewarm=false;
   for(const st of g.streams)st.cars=st.cars.filter(k=>{const y=st.y0+st.dy*k.s,x=st.x0+st.dx*k.s;return !(Math.abs(x-g.car.x)<40+g.car.wid&&Math.abs(y-g.car.y)<200+g.car.len/2);});
   g.fy=g.car.y-22;
-  cam.x=g.car.x;cam.y=g.car.y-150;
+  if(!opt.headless){cam.x=g.car.x;cam.y=g.car.y-150;}
   return g;
 }
 function step(g,dt){
   const L=g.L,c=g.car;g.t+=dt;
-  updateCar(c,dt,readInput(c));
+  updateCar(c,dt,g.apFn?g.apFn(g):readInput(c));
   if(L.map==='course'){const gx=slopeG(g,c.x,c.y);if(gx){if(c.braking&&!c.revMode&&Math.abs(c.v)<6)c.v=0;else c.v+=gx*Math.sin(c.a)*dt;}}
   if(Math.abs(c.v)>25)g.moved=true;
   g.stopT=Math.abs(c.v)<1.5?g.stopT+dt:0;
@@ -1394,7 +1403,7 @@ function updZoomBtns(){const a=$('#zIn'),b=$('#zOut');if(a){a.disabled=zoomIdx>=
 function draw30m(){ctx.save();ctx.fillStyle='#ffc72c';for(let x=4;x<W-4;x+=14)ctx.fillRect(x,SIG30,8,3);
   ctx.font='900 13px "Noto Sans TC",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
   ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillText('30m 前打方向燈',W+9,SIG30+2);ctx.fillStyle='#ffc72c';ctx.fillText('30m 前打方向燈',W+8,SIG30+1);ctx.restore();}
-function updateCam(g,dt){const c=g.car;const zt=zoomTarget();zoomCur=zoomCur?zoomCur+(zt-zoomCur)*(1-Math.exp(-dt*6)):zt;const look=(110+Math.abs(c.v)*0.4)*(c.spec.ship?8:c.spec.plane?2:c.spec.tiny?0.4:1);
+function updateCam(g,dt){const gf=ghostOn&&g===G&&!g.moved&&mode==='play'?ghostFrame():null;const c=gf?{x:gf.x,y:gf.y,a:gf.a,v:120,spec:SEDAN}:g.car;const zt=zoomTarget();zoomCur=zoomCur?zoomCur+(zt-zoomCur)*(1-Math.exp(-dt*6)):zt;const look=(110+Math.abs(c.v)*0.4)*(c.spec.ship?8:c.spec.plane?2:c.spec.tiny?0.4:1);
   const tx=c.x+Math.sin(c.a)*look,ty=c.y-Math.cos(c.a)*look;const k=1-Math.exp(-dt*3);cam.x+=(tx-cam.x)*k;cam.y+=(ty-cam.y)*k;}
 function render(g){
   const L=g.L,z=zoom();
@@ -1409,12 +1418,156 @@ function render(g){
   L.drawUnder&&L.drawUnder(g);
   if(L.finishY!=null)finishLine(L.finishY);
   for(const st of g.streams)for(const o of streamObjs(st))drawCar(o);
+  if(g===G&&ghostOn)drawGhost();
   drawCar(g.car);
   for(const p of g.peds)drawPed(p);
   L.drawOver&&L.drawOver(g);
   if(L.stopSign)stopSignAt(112,150);
   if(g.light&&L.map==='cross')drawSignalHead(g);
 }
+
+/* ---------- 虛擬教練車：自動駕駛示範 ---------- */
+function apSig(g,d){const c=g.car;if(c.signal!==d){c.signal=d;c.sigA0=c.a;c.sigFy=g.fy;g.sigCancel=0;}}
+function cap(g,t){g.cap=t;}
+function apPP(g,path,look,rev){
+  const c=g.car,hb=c.spec.wb/2,s=Math.sin(c.a),k=Math.cos(c.a);
+  const rx=rev?c.x-s*hb:c.x+s*hb,ry=rev?c.y+k*hb:c.y-k*hb;
+  let bi=0,bt=0,bd=1e18;
+  for(let i=0;i<path.length-1;i++){const ax=path[i][0],ay=path[i][1],dx=path[i+1][0]-ax,dy=path[i+1][1]-ay,l=dx*dx+dy*dy||1;
+    const t=clamp(((rx-ax)*dx+(ry-ay)*dy)/l,0,1),px=ax+dx*t,py=ay+dy*t,d=(px-rx)*(px-rx)+(py-ry)*(py-ry);if(d<bd){bd=d;bi=i;bt=t;}}
+  let i=bi,px=path[i][0]+(path[i+1][0]-path[i][0])*bt,py=path[i][1]+(path[i+1][1]-path[i][1])*bt,rem=look;
+  while(rem>0&&i<path.length-1){const nx=path[i+1][0],ny=path[i+1][1],sl=Math.hypot(nx-px,ny-py);
+    if(sl>=rem){px+=(nx-px)/sl*rem;py+=(ny-py)/sl*rem;rem=0;}else{rem-=sl;px=nx;py=ny;i++;}}
+  if(rem>0){const a=path[path.length-2],b=path[path.length-1],l=Math.hypot(b[0]-a[0],b[1]-a[1])||1;px+=(b[0]-a[0])/l*rem;py+=(b[1]-a[1])/l*rem;}
+  const want=Math.atan2(px-rx,-(py-ry)),al=angDiff(want,rev?c.a+PI:c.a),ld=Math.max(10,Math.hypot(px-rx,py-ry));
+  let dl=Math.atan(2*c.spec.wb*Math.sin(al)/ld);if(rev)dl=-dl;
+  return clamp(dl/(c.spec.steer/(1+Math.abs(c.v)/260)),-1,1);}
+function apV(g,vt){const c=g.car,v=c.v,MX=c.spec.maxV*c.mul;
+  if(vt<=0.5){if(c.revMode)return {up:0,down:0};return {up:0,down:(Math.abs(v)>0.5||c.dnPrev)?1:0};}
+  if(v>vt+3)return {up:0,down:clamp((v-vt)/60,0.2,1)};
+  return {up:clamp(vt/(MX*1.15)+(vt-v)/25,0,1),down:0};}
+function apRev(g,vt){const c=g.car;if(!c.revMode)return {up:0,down:c.dnPrev?0:0.6};return {up:0,down:clamp(-vt/60,0.35,1)};}
+function stopV(g,d,vmax){return Math.min(vmax,Math.sqrt(2*g.car.spec.brk*0.42*Math.max(0,d-0.5)));}
+function D(g,path,vt,look){return Object.assign({steer:apPP(g,path,look||30+Math.abs(g.car.v)*0.35)},apV(g,vt));}
+const LANE_N=x=>[[x,5000],[x,-9000]];
+const TURN_L=(()=>{const p=[[22.5,5000],[22.5,67.5]];for(let i=1;i<=14;i++){const t=-i/14*PI/2;p.push([-67.5+90*Math.cos(t),67.5+90*Math.sin(t)]);}p.push([-5000,-22.5]);return p;})();
+const TURN_R=(()=>{const p=[[67.5,5000],[67.5,160]];for(let i=1;i<=16;i++){const t=PI+i/16*PI/2;p.push([160+92.5*Math.cos(t),160+92.5*Math.sin(t)]);}p.push([5000,67.5]);return p;})();
+function vehList(g){const out=[];for(const st of g.streams)for(const k of st.cars)out.push({x:st.x0+st.dx*k.s,y:st.y0+st.dy*k.s,v:k.v,len:44});
+  if(g.truck)out.push({x:g.truck.x,y:g.truck.y,v:g.truck.v,len:g.truck.len});return out;}
+function gapOK(g,x,ahead,behind){const c=g.car;return !vehList(g).some(o=>Math.abs(o.x-x)<20&&o.y>c.y-ahead&&o.y<c.y+behind);}
+function acc(g,cruise){const c=g.car;let lead=null;for(const o of vehList(g))if(Math.abs(o.x-c.x)<22&&o.y<c.y&&(!lead||o.y>lead.y))lead=o;
+  if(!lead)return cruise;const gap=(c.y-c.len/2)-(lead.y+lead.len/2),need=Math.max(c.v,lead.v)*1.8+30;
+  return gap<need*1.3?Math.max(0,Math.min(cruise,lead.v-(need*1.3-gap)*0.5)):cruise;}
+function gapChase(g,x,ahead,behind){const c=g.car,L=vehList(g).filter(o=>Math.abs(o.x-x)<20).sort((a,b)=>a.y-b.y);
+  const vl=L.length?L.reduce((t,o)=>t+o.v,0)/L.length:c.v;let best=null;
+  for(let i=0;i<=L.length;i++){const lo=i>0?L[i-1].y+ahead:-1e9,hi=i<L.length?L[i].y-behind:1e9;if(hi-lo<60)continue;
+    const ty=clamp(c.y,lo+30,hi-30),e=c.y-ty,tm=Math.abs(e)/Math.max(5,e>0?270-vl:vl-175);if(!best||tm<best.tm)best={e,tm,ok:c.y>lo&&c.y<hi};}
+  if(!best)return {ok:false,v:vl-40};return {ok:best.ok,v:clamp(vl+clamp(best.e*0.8,-70,70),175,270)};}
+const shiftPath=(fx,tx,y,len)=>[[fx,y+60],[fx,y],[tx,y-len],[tx,-9000]];
+
+const AP={
+ '1-1':(g)=>{cap(g,'減速，把車停在停止線前 1～2 公尺。');return D(g,LANE_N(67.5),stopV(g,g.fy-(STOP_Y+12),150));},
+ '1-2':(g,s)=>{apSig(g,'left');
+   if(!g.light.left){cap(g,'30 公尺前先打左轉燈，停在停止線前等左轉箭頭。');return D(g,TURN_L,stopV(g,g.fy-(STOP_Y+10),150));}
+   cap(g,'左轉箭頭亮了，從內側車道左轉。');return D(g,TURN_L,80);},
+ '1-3':(g,s)=>{apSig(g,'right');const go=g.pedOn&&(!g.peds.length||g.peds[0].y>112);
+   if(!s.go&&!go){cap(g,'30 公尺前打右轉燈；斑馬線上有行人，先停車禮讓。');return D(g,TURN_R,stopV(g,g.fy-200,150));}
+   s.go=1;cap(g,'行人走過了，從外側車道右轉。');return D(g,TURN_R,40,20);},
+ '1-4':(g,s)=>{if(!s.go){if(g.light.g){s.gt=(s.gt||0)+1/120;if(s.gt>0.6)s.go=1;}cap(g,'紅燈，停在停止線前等綠燈。');return D(g,LANE_N(67.5),stopV(g,g.fy-(STOP_Y+10),150));}
+   cap(g,'綠燈了，直行通過，不用打方向燈。');return D(g,LANE_N(67.5),150);},
+ '2-1':(g,s)=>{if(!s.go){const v=vehList(g);const clear=!v.some(o=>(o.y>0&&o.x>-540&&o.x<130)||(o.y<0&&o.x>-130&&o.x<540));
+     if(g.didStop&&clear)s.go=1;cap(g,g.didStop?'已完全停車，等左右幹道來車的空檔。':'看到「停」標誌，先在停止線前完全停車。');return D(g,LANE_N(67.5),stopV(g,g.fy-(STOP_Y+8),150));}
+   cap(g,'看準空檔，直行通過。');return D(g,LANE_N(67.5),160);},
+ '2-2':(g,s)=>{const go=g.pedOn&&g.peds.every(p=>p.x>W+15);
+   if(!s.go&&!go){cap(g,'行人要過馬路，停在停止線前禮讓。');return D(g,LANE_N(67.5),stopV(g,g.fy-70,150));}
+   s.go=1;cap(g,'行人都走過了，開到終點。');return D(g,LANE_N(67.5),130);},
+ '2-3':(g)=>{cap(g,'進入速限區後，時速保持在 40 km/h 以下。');return D(g,LANE_N(67.5),106);},
+ '2-4':(g,s)=>{const c=g.car;if(c.y<700&&!s.l){apSig(g,'left');s.l=1;}if(c.y<-380&&!s.r){apSig(g,'right');s.r=1;}
+   cap(g,c.y>-380?'前方施工：打左轉燈，換到內側車道。':'過了施工區：打右轉燈，回到外側車道。');
+   return D(g,[[67.5,900],[67.5,620],[22.5,460],[22.5,-400],[67.5,-560],[67.5,-3000]],110);},
+ '3-1':(g,s)=>{const go=g.didStop&&!g.alarm&&g.rail.state==='done';
+   if(!s.go&&!go){cap(g,g.alarm?'警鈴在響、柵欄放下，停車等火車通過。':'平交道前先停車：停、看、聽。');return D(g,LANE_N(67.5),stopV(g,g.fy-105,150));}
+   s.go=1;cap(g,'柵欄升起，確認安全後通過。');return D(g,LANE_N(67.5),130);},
+ '3-2':(g,s)=>{apSig(g,'left');const c=g.car;
+   if(!s.go){const clear=!vehList(g).some(o=>o.x<0&&o.y>-740&&o.y<170);if(c.y<80&&clear&&Math.abs(c.v)<5)s.go=1;
+     cap(g,'打左轉燈進路口中央等候，讓對向直行車先走。');return D(g,TURN_L,stopV(g,c.y-70,140));}
+   cap(g,'看準空檔，左轉。');return D(g,TURN_L,75);},
+ '3-3':(g)=>{apSig(g,'right');const c=g.car,t=(g.slot.top+g.slot.bot)/2;cap(g,'打右轉燈靠邊，把整台車停進停車格、擺正。');
+   return D(g,[[67.5,900],[67.5,-120],[110,-300],[110,-3000]],stopV(g,c.y-t,100));},
+ '3-4':(g,s)=>{apSig(g,'left');const c=g.car;
+   if(!s.go){if(!vehList(g).some(o=>o.y>-470&&o.y<740))s.go=1;cap(g,'起步前打左轉燈，等後方來車過去。');return {up:0,down:0,steer:0};}
+   cap(g,'出現空檔了，駛回車道。');return D(g,[[110,-280],[110,-305],[67.5,-395],[67.5,-3000]],c.x>80?50:200);},
+ '4-1':(g,s)=>{apSig(g,'left');const c=g.car;
+   if(!s.m){const gc=gapChase(g,112.5,420,240);if(c.y<820&&gc.ok&&KMH(c.v)>63){s.m=1;s.path=shiftPath(157.5,112.5,c.y,220);}
+     else{cap(g,'在加速車道加速到 60 km/h 以上，打左轉燈找空檔。');return D(g,LANE_N(157.5),Math.max(185,gc.v));}}
+   cap(g,'匯入主線，和前車保持安全距離。');return D(g,s.path,acc(g,255));},
+ '4-2':(g,s)=>{const c=g.car,t=g.truck;
+   if(!s.p){const gc=gapChase(g,22.5,420,260);if(t.v<248&&gc.ok){s.p=1;apSig(g,'left');s.path=shiftPath(67.5,22.5,c.y,200);}
+     cap(g,'和前方大貨車保持安全距離（時速的一半公尺）。');return D(g,LANE_N(67.5),acc(g,t.v<248?Math.max(175,gc.v):255));}
+   if(s.p===1){if(c.y+c.len/2<t.y-t.len/2-170&&gapOK(g,67.5,300,200)){s.p=2;apSig(g,'right');s.path=shiftPath(22.5,67.5,c.y,200);}
+     cap(g,'前車變慢了，打左轉燈從內側車道超車。');return D(g,s.path,acc(g,272));}
+   cap(g,'超車完成，打右轉燈回到原車道。');return D(g,s.path,acc(g,255));},
+ '4-3':(g,s)=>{const c=g.car,X=[22.5,67.5,112.5,157.5,202.5];s.k=s.k||0;
+   const gc=s.k<2?gapChase(g,X[s.k+1],380,260):null,gok=gc&&gc.ok;
+   const want=s.k<2?c.y<800&&gok:s.k===2?c.y<-2560:s.k===3?c.y<-2880:false;
+   if(want){s.path=shiftPath(X[s.k],X[s.k+1],c.y,220);s.k++;apSig(g,'right');}
+   cap(g,s.k<3?'出口在右邊：打右轉燈，一次換一個車道到外側。':'進入減速車道，沿匝道離開國道。');
+   return D(g,s.path||LANE_N(22.5),s.k<3?acc(g,gc?Math.min(270,gc.v):250):s.k===3?180:150);},
+};
+/* 駕訓班場地 */
+const APP={
+ 'S彎':(g,s)=>{const c=g.car,co=g.course,st=g.stn;
+   if(!s.fw){s.fw=[[-160,-100],...co.pts.slice(0,-1),[80,co.sEnd-c.len/2-15]];s.bw=[...s.fw].reverse().concat([[-160,-60]]);}
+   if(st.s<3){cap(g,'S 形彎道：慢慢前進到終點區，車身完全進入後停車。');return D(g,s.fw,stopV(g,c.y-(co.sEnd-c.len/2-15),40),20);}
+   if(st.s===3){cap(g,'沿原路倒車退回，途中不要前進修正。');return Object.assign(apRev(g,-30),{steer:apPP(g,s.bw,22,true)});}
+   return {up:0,down:0,steer:0};},
+ '入庫':(g,s)=>{const c=g.car,co=g.course,st=g.stn,p=s.prm,px=320-p.xo,py=co.gy-p.yo;s.ph=s.ph||0;
+   if(s.ph===0){cap(g,'往前開過車庫，停在庫位前方。');const d=c.y-py;if(d<1&&Math.abs(c.v)<1&&g.stopT>0.3)s.ph=1;return D(g,[[180,120],[180,60],[px,-60],[px,-700]],stopV(g,d,70));}
+   if(s.ph===1){cap(g,'方向盤打到底，倒車讓車尾轉進車庫。');if(Math.abs(angDiff(c.a,-PI/2))<0.04)s.ph=2;return Object.assign(apRev(g,-30),{steer:1});}
+   if(s.ph===2){cap(g,'車身擺正，繼續倒車進庫。');if(c.x-c.len/2>326)s.ph=3;return Object.assign(apRev(g,-30),{steer:0});}
+   if(s.ph===3){cap(g,'完全入庫，停穩。');if(st.garage>=2)s.ph=4;return Object.assign(apV(g,0),{steer:0});}
+   cap(g,'入庫完成，往前開出車庫。');return D(g,[[c.x+5,co.gy],[-300,co.gy]],50);},
+ '路停':(g,s)=>{const c=g.car,co=g.course,st=g.stn,p=s.prm;s.ph=s.ph||0;const dv=Math.abs(angDiff(c.a,-PI/2));
+   if(s.ph===0){cap(g,'沿著停車格往前開過頭，停下來準備倒車。');const tx=co.sx0-22+p.off,d=c.x-tx;if(d<1&&Math.abs(c.v)<1&&g.stopT>0.3)s.ph=1;
+     const y=320-c.wid/2-p.yo;return D(g,[[230,280],[150,y],[-900,y]],stopV(g,d,70));}
+   if(s.ph===1){cap(g,'方向盤往左打到底，倒車讓車尾進格。');if(dv>p.dev)s.ph=2;return Object.assign(apRev(g,-25),{steer:-1});}
+   if(s.ph===2){cap(g,'方向盤反打回來，把車身擺正。');if(dv<0.03)s.ph=3;return Object.assign(apRev(g,-25),{steer:1});}
+   if(s.ph===3){cap(g,'停好了，車身與路邊平行。');if(st.slot>=2){s.ph=4;apSig(g,st.slotNeed);}return Object.assign(apV(g,0),{steer:0});}
+   if(s.ph===4){cap(g,'打方向燈準備出格，先倒車到格子後端。');if(c.x+c.len/2>co.sx1-8)s.ph=5;return Object.assign(apRev(g,-25),{steer:0});}
+   if(s.ph===5){if(Math.abs(c.v)<0.5&&!c.revMode)s.ph=6;return Object.assign(apV(g,0),{steer:0});}
+   cap(g,'方向盤打到底，慢慢開出停車格。');const r=apV(g,30);r.steer=c.a>-0.35||s.ph===7?-1:1;if(c.a>-0.35)s.ph=7;return r;},
+ '坡道':(g,s)=>{const c=g.car,co=g.course,st=g.stn;
+   if(st.slope<2){cap(g,'上坡：前保險桿停在白線前 3 公尺內，踩住煞車別後溜。');return D(g,[[-220,0],[-3000,0]],stopV(g,(c.x-c.len/2)-(co.stopX+12),85));}
+   cap(g,'放開煞車馬上加油門，起步上坡、越過坡頂。');return D(g,[[-220,0],[-3000,0]],85);},
+};
+const AP_VARS={'入庫':[{xo:20,yo:50},{xo:30,yo:60},{xo:40,yo:50},{xo:20,yo:70},{xo:40,yo:80}],
+  '路停':[{dev:0.85,off:20,yo:4},{dev:0.75,off:0,yo:4},{dev:0.65,off:0,yo:4},{dev:0.75,off:20,yo:10},{dev:0.65,off:-20,yo:4}]};
+const SEDAN=VEHICLES.find(v=>v.id==='sedan');
+function runAP(L,fn,p){
+  const g=newGame(0,[L],{spec:SEDAN,headless:true});g.as={prm:p};g.apFn=gg=>fn(gg,gg.as);
+  const fr=[];for(let i=0;i<120*160&&!g.over;i++){step(g,1/120);if(i%4===0)fr.push({x:g.car.x,y:g.car.y,a:g.car.a,s:g.car.signal,b:g.car.braking,c:g.cap||''});}
+  fr.push({x:g.car.x,y:g.car.y,a:g.car.a,s:null,b:false,c:'示範完成！'});
+  return g.over==='win'?fr:null;}
+function bestRun(L){const fn=AP[L.id]||APP[L.id];if(!fn)return null;const vars=AP_VARS[L.id]||[{}];
+  for(let k=0;k<Math.max(12,vars.length);k++){const fr=runAP(L,fn,vars[k%vars.length]);if(fr)return fr;}return null;}
+function buildGhost(L){
+  if(L.practice&&L.need.length>1){const all=[];for(const id of ['S彎','入庫','路停','坡道']){const P=PRACTICE.find(p=>p.id===id);const fr=bestRun(P);if(!fr)return null;
+      fr.forEach(f=>f.c=`【${P.name}】${f.c}`);if(all.length)fr[0].cut=1;all.push(...fr);}return all;}
+  return bestRun(L);}
+/* playback */
+let ghostOn=false,ghost=null;
+function ghostStart(){ghost=null;if(!ghostOn||!G)return;const fr=buildGhost(G.L);ghost={fr,t:0,speed:ghost&&ghost.speed||gSpeed};updGhostUI();}
+let gSpeed=1;
+function ghostFrame(){if(!ghost||!ghost.fr)return null;const fr=ghost.fr,f=ghost.t*30,i=Math.min(fr.length-1,Math.floor(f)),j=Math.min(fr.length-1,i+1),u=f-Math.floor(f);
+  const A=fr[i],B=fr[j];if(B.cut||i===j)return A;return {x:A.x+(B.x-A.x)*u,y:A.y+(B.y-A.y)*u,a:A.a+angDiff(B.a,A.a)*u,s:A.s,b:A.b,c:A.c};}
+function ghostDone(){return ghost&&ghost.fr&&ghost.t*30>=ghost.fr.length-1;}
+function drawGhost(){const f=ghostFrame();if(!f)return;
+  ctx.save();ctx.globalAlpha=0.45;drawCar({x:f.x,y:f.y,a:f.a,len:44,wid:22,type:'sedan',color:'#ffffff',player:true,signal:f.s,braking:f.b});ctx.restore();
+  ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.setLineDash([4,3]);ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(-13,-24,26,48,6);ctx.stroke();ctx.restore();
+  ctx.save();ctx.font='900 11px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillText('教練',f.x+1,f.y-31);ctx.fillStyle='#fff';ctx.fillText('教練',f.x,f.y-32);ctx.restore();}
+function updGhostUI(){const b=$('#gBtn'),p=$('#gPanel');if(!b)return;b.classList.toggle('on',ghostOn);p.classList.toggle('hidden',!ghostOn);
+  $('#gSpd').textContent=gSpeed+'×';if(ghostOn&&ghost&&!ghost.fr)$('#gCap').textContent='這一關的示範暫時產生不出來，請稍後再試。';}
+function toggleGhost(){ghostOn=!ghostOn;if(ghostOn)ghostStart();else ghost=null;updGhostUI();}
 
 /* ---------- HUD ---------- */
 const hud={spd:$('#hSpd'),speedo:$('#speedo'),sigL:$('#sigL'),sigR:$('#sigR'),info:$('#hInfo'),tl:$('#tl'),
@@ -1449,6 +1602,7 @@ addEventListener('keydown',e=>{
   if(mode==='play'){
     if(e.code==='Equal'||e.code==='NumpadAdd')setZoom(zoomIdx+1);
     else if(e.code==='Minus'||e.code==='NumpadSubtract')setZoom(zoomIdx-1);
+    else if(e.code==='KeyG')toggleGhost();
     else if(e.code==='KeyQ')toggleSig('left');
     else if(e.code==='KeyE')toggleSig('right');
     else if(e.code==='Escape'||e.code==='KeyP')pause();
@@ -1545,7 +1699,7 @@ function loadLevel(i,direct,set){
   if(set)curSet=set;
   if(curSet===LEVELS&&seqLocked(i)){showLevels();$('#lvMsg').textContent='🔒 '+seqMsg(i);return;}
   if(isLocked(curSet[i])){showShop();return;}
-  cur=i;G=newGame(i);const L=G.L;
+  cur=i;G=newGame(i);const L=G.L;ghost=null;if(ghostOn)ghostStart();
   $('#hId').textContent=L.id;$('#hName').textContent=L.name;$('#hGoal').textContent=L.goal;
   if(direct){startPlay();return;}
   $('#iChap').textContent=L.practice?'操作練習　駕訓班場地':CHAPTERS[L.chapter];$('#iId').textContent=L.id;$('#iName').textContent=L.name;$('#iGoal').textContent=L.goal;
@@ -1605,6 +1759,7 @@ document.addEventListener('click',e=>{
 });
 $('#btnStart').onclick=startPlay;
 $('#btnPause').onclick=pause;
+$('#gBtn').onclick=toggleGhost;$('#gReplay').onclick=()=>{if(ghost)ghost.t=0;else ghostStart();};$('#gSpd').onclick=()=>{gSpeed=gSpeed===1?2:gSpeed===2?4:1;updGhostUI();};
 $('#zIn').onclick=()=>setZoom(zoomIdx+1);$('#zOut').onclick=()=>setZoom(zoomIdx-1);updZoomBtns();
 
 /* ---------- loop ---------- */
@@ -1614,6 +1769,7 @@ function loop(now){
   const rot=mode==='play'&&needRotate();
   if(rotEl.classList.contains('hidden')===rot){rotEl.classList.toggle('hidden',!rot);if(rot)joyReset();}
   if(mode==='play'&&!rot&&G&&!G.over){for(let i=0;i<2&&!G.over;i++)step(G,dt/2);}
+  if(ghostOn&&ghost&&ghost.fr&&mode==='play'&&!rot){ghost.t=Math.min(ghost.t+dt*gSpeed,(ghost.fr.length-1)/30);const f=ghostFrame();$('#gCap').textContent=ghostDone()?'示範完成！按「重播」再看一次。':(f?f.c:'');}
   if(G){updateCam(G,dt);render(G);if(mode==='play'||mode==='ended'||mode==='pause')updateHud(G);}
   requestAnimationFrame(loop);
 }
