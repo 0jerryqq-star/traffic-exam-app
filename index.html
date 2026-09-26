@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>路口駕訓班</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --panel:#f7f7f2; --ink:#17191c; --muted:#58606a; --line:rgba(0,0,0,.14);
+  --scrim:rgba(20,30,22,.52); --shadow:0 14px 40px rgba(0,0,0,.28);
+  --sign:#0e6b47; --warn:#ffc72c; --warn-edge:#a57a00; --bad:#d52b1e; --good:#1c8f52; --blue:#1f5fbf;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --panel:#1a1e24; --ink:#eeebe3; --muted:#9ea7b2; --line:rgba(255,255,255,.14);
+    --scrim:rgba(6,10,8,.66); --shadow:0 14px 40px rgba(0,0,0,.55);
+  }
+}
+:root[data-theme="dark"]{
+  --panel:#1a1e24; --ink:#eeebe3; --muted:#9ea7b2; --line:rgba(255,255,255,.14);
+  --scrim:rgba(6,10,8,.66); --shadow:0 14px 40px rgba(0,0,0,.55);
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:#4f7f3d;color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+
+/* ---------- screens ---------- */
+.screen{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+  background:var(--scrim);overflow:auto}
+.screen.show{display:flex}
+.stack{width:100%;max-width:520px;display:flex;flex-direction:column;gap:18px;margin:auto}
+
+.board{background:var(--sign);color:#fff;border:4px solid #fff;outline:3px solid var(--sign);border-radius:16px;
+  padding:22px 26px 20px;box-shadow:var(--shadow);position:relative}
+.board .route{position:absolute;top:-16px;left:22px;background:var(--warn);color:#111;font-weight:900;
+  border-radius:8px;padding:2px 10px;font-size:14px;border:2px solid #111}
+.board h1{font-weight:900;font-size:clamp(46px,12vw,78px);line-height:1.02;margin:6px 0 10px;letter-spacing:.04em}
+.board p{margin:0;font-weight:500;opacity:.92;line-height:1.55}
+.board .arrow{position:absolute;right:22px;top:22px;font-size:44px;line-height:1;font-weight:900}
+
+.menu{display:flex;flex-direction:column;gap:12px}
+.btn{appearance:none;border:0;border-radius:12px;font:inherit;font-weight:900;font-size:20px;padding:14px 20px;cursor:pointer;
+  background:var(--warn);color:#111;box-shadow:0 5px 0 var(--warn-edge);text-align:left;display:flex;justify-content:space-between;align-items:center}
+.btn small{font-weight:500;font-size:13px;opacity:.7}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--warn-edge)}
+.btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.btn.plain{background:var(--panel);color:var(--ink);box-shadow:0 5px 0 var(--line)}
+.btn.red{background:var(--bad);color:#fff;box-shadow:0 5px 0 #7c160f}
+.btn.center{justify-content:center;text-align:center}
+.keys{color:#fff;font-size:13px;line-height:1.7;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.keys kbd{font-family:inherit;background:rgba(255,255,255,.18);border-radius:5px;padding:0 6px;font-weight:700}
+
+.card{background:var(--panel);color:var(--ink);border-radius:18px;padding:22px;box-shadow:var(--shadow);width:100%}
+.card h2{margin:0 0 4px;font-size:28px;font-weight:900}
+.card .chap{color:var(--muted);font-size:14px;font-weight:700}
+.card p{line-height:1.6;margin:10px 0}
+.card ul{margin:8px 0 0;padding-left:20px;line-height:1.7}
+.card .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.card .row .btn{flex:1 1 140px}
+.lvid{font-family:"Chakra Petch","Noto Sans TC",sans-serif;font-weight:700;background:var(--warn);color:#111;border-radius:8px;padding:0 10px;border:2px solid #111;margin-right:8px;font-size:22px}
+
+.levels{max-width:720px}
+.chapter h3{color:#fff;margin:6px 0 10px;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.lv{appearance:none;border:0;font:inherit;cursor:pointer;text-align:left;border-radius:14px;padding:12px 14px 14px;color:#fff;position:relative;box-shadow:0 5px 0 rgba(0,0,0,.35)}
+.lv:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.lv:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.lv.c1{background:var(--blue)} .lv.c2{background:var(--bad)} .lv.c3{background:var(--warn);color:#111}
+.lv b{display:block;font-family:"Chakra Petch",sans-serif;font-size:26px;line-height:1.1}
+.lv span{font-weight:700;font-size:15px}
+.lv .done{position:absolute;right:10px;top:8px;background:#fff;color:var(--good);border-radius:50%;width:26px;height:26px;display:grid;place-items:center;font-weight:900}
+
+.result h2{font-size:34px}
+.result.win h2{color:var(--good)} .result.fail h2{color:var(--bad)}
+.reason{background:rgba(213,43,30,.1);border-left:5px solid var(--bad);border-radius:8px;padding:12px 14px;font-weight:700;line-height:1.6}
+.result.win .reason{background:rgba(28,143,82,.12);border-color:var(--good)}
+
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.veh{appearance:none;border:3px solid transparent;font:inherit;cursor:pointer;text-align:left;border-radius:16px;padding:12px 14px 14px;background:var(--panel);color:var(--ink);box-shadow:0 5px 0 rgba(0,0,0,.3);position:relative}
+.veh:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.veh.sel{border-color:var(--warn)}
+.veh canvas{width:100%;height:64px;display:block;background:#3c4046;border-radius:10px;margin-bottom:10px}
+.veh h4{margin:0;font-size:20px;font-weight:900}
+.veh p{margin:4px 0 8px;font-size:13px;color:var(--muted);line-height:1.5}
+.veh dl{display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;margin:0;font-size:13px;align-items:center}
+.veh dt{font-weight:700}
+.veh dd{margin:0;font-family:"Chakra Petch","Noto Sans TC",sans-serif;font-weight:700;text-align:right}
+.veh .bar{height:7px;border-radius:4px;background:var(--line);overflow:hidden}
+.veh .bar i{display:block;height:100%;background:var(--sign);border-radius:4px}
+.veh .tick{position:absolute;right:12px;top:12px;background:var(--warn);color:#111;font-weight:900;border-radius:8px;padding:0 8px;font-size:13px;border:2px solid #111}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+.hud-top{position:absolute;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;gap:10px;align-items:flex-start}
+.goalbox{background:rgba(14,18,22,.8);color:#fff;border-radius:12px;padding:8px 12px;max-width:min(560px,74vw)}
+.goalbox .t{font-weight:900;font-size:16px}
+.goalbox .t .lvid{font-size:15px;padding:0 6px;border-width:1.5px}
+#hGoal{font-size:13px;color:#cfd7df;margin-top:4px;line-height:1.5}
+#btnPause{pointer-events:auto;margin-left:auto;appearance:none;border:0;background:rgba(14,18,22,.8);color:#fff;border-radius:12px;width:46px;height:46px;font-size:18px;font-weight:900;cursor:pointer}
+#btnPause:focus-visible{outline:3px solid var(--warn)}
+.tl{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 66px);background:#15171a;border:3px solid #2e3238;border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:7px}
+.tl i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:900;font-size:22px}
+.tl .r{background:#3a1a18}.tl .y{background:#3a3218}.tl .g{background:#17331f}.tl .a{background:#17331f;color:#244a2e}
+.tl .r.on{background:#ff3b2f;box-shadow:0 0 18px #ff3b2f}
+.tl .y.on{background:#ffc31f;box-shadow:0 0 18px #ffc31f}
+.tl .g.on{background:#2fe06b;box-shadow:0 0 18px #2fe06b}
+.tl .a.on{background:#10240f;color:#3cff78;text-shadow:0 0 10px #3cff78}
+.hud-bottom{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.speedo{background:rgba(14,18,22,.82);color:#fff;border-radius:12px;padding:6px 14px 8px;font-family:"Chakra Petch",sans-serif;text-align:center;min-width:96px}
+#hSpd{font-size:36px;font-weight:700;display:block;line-height:1}
+.speedo small{font-size:12px;opacity:.7}
+.speedo.over{background:var(--bad)}
+.sig{background:rgba(14,18,22,.82);border-radius:12px;padding:8px 12px;display:flex;gap:12px;font-size:24px;font-weight:900;color:#3b4046}
+.sig .on{color:#ffb020;text-shadow:0 0 12px #ffb020}
+#hInfo{background:rgba(14,18,22,.82);color:#fff;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;max-width:70vw}
+
+/* ---------- touch ---------- */
+.touch{display:none}
+@media (hover:none) and (pointer:coarse){
+  .touch{display:flex}
+  .hud-bottom{bottom:calc(env(safe-area-inset-bottom,0px) + 104px)}
+  .keys .kb{display:none}
+}
+.touch{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);justify-content:space-between;align-items:flex-end;padding:0 12px;z-index:11;pointer-events:none;gap:8px}
+.touch .pad{display:flex;gap:8px;pointer-events:auto}
+.touch button{appearance:none;border:0;width:72px;height:80px;border-radius:16px;background:rgba(14,18,22,.78);color:#fff;font:inherit;font-size:26px;font-weight:900;touch-action:none}
+.touch button.act{background:rgba(255,199,44,.95);color:#111}
+.touch .mid button{width:54px;height:54px;font-size:15px}
+.touch .gas{background:#1c8f52}.touch .brk{background:#b3261b}
+.touch button{font-size:18px}
+@media (prefers-reduced-motion: reduce){.btn:active,.lv:active{transform:none}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="goalbox"><div class="t"><span class="lvid" id="hId">1-1</span><span id="hName"></span></div><div id="hGoal"></div></div>
+    <button id="btnPause" aria-label="暫停">II</button>
+  </div>
+  <div class="tl hidden" id="tl"><i class="r"></i><i class="y"></i><i class="g"></i><i class="a hidden">←</i></div>
+  <div class="hud-bottom">
+    <div class="speedo" id="speedo"><span id="hSpd">0</span><small>km/h</small></div>
+    <div class="sig"><span id="sigL">◀</span><span id="sigR">▶</span></div>
+    <div id="hInfo"></div>
+  </div>
+</div>
+
+<div id="touch" class="touch hidden">
+  <div class="pad"><button data-k="left" aria-label="左轉向">◀</button><button data-k="right" aria-label="右轉向">▶</button></div>
+  <div class="pad mid"><button data-sig="left" aria-label="左方向燈">⇦燈</button><button data-sig="right" aria-label="右方向燈">燈⇨</button></div>
+  <div class="pad"><button data-k="down" class="brk">煞車</button><button data-k="up" class="gas">油門</button></div>
+</div>
+
+<!-- Main menu -->
+<section class="screen show" id="scrMenu">
+  <div class="stack">
+    <div class="board">
+      <span class="route">駕訓挑戰</span>
+      <span class="arrow">↑</span>
+      <h1>路口<br>駕訓班</h1>
+      <p><span id="lvCount">12</span> 個小關卡：看懂號誌、打方向燈、禮讓行人、路邊停車，一關一關練到熟。</p>
+    </div>
+    <nav class="menu">
+      <button class="btn" data-act="restart">重新開始 <small>從 1-1 開始</small></button>
+      <button class="btn" data-act="levels">選擇關卡 <small id="progTxt"></small></button>
+      <button class="btn" data-act="vehicles">選擇車輛 <small id="vehTxt"></small></button>
+      <button class="btn red" data-act="quit">離開遊戲</button>
+    </nav>
+    <div class="keys"><span class="kb">操作：<kbd>↑</kbd>/<kbd>W</kbd> 油門　<kbd>↓</kbd>/<kbd>S</kbd> 煞車（停住後按住倒車）　<kbd>←</kbd><kbd>→</kbd> 轉向　<kbd>Q</kbd>/<kbd>E</kbd> 左／右方向燈　<kbd>Esc</kbd> 暫停</span></div>
+  </div>
+</section>
+
+<!-- Level select -->
+<section class="screen" id="scrLevels">
+  <div class="stack levels">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <h2 style="color:#fff;margin:0;font-size:30px;font-weight:900;text-shadow:0 2px 4px rgba(0,0,0,.5)">選擇關卡</h2>
+      <button class="btn plain center" data-act="menu" style="font-size:16px;padding:10px 16px">回主選單</button>
+    </div>
+    <div id="lvList"></div>
+  </div>
+</section>
+
+<!-- Vehicle select -->
+<section class="screen" id="scrVehicles">
+  <div class="stack levels">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <h2 style="color:#fff;margin:0;font-size:30px;font-weight:900;text-shadow:0 2px 4px rgba(0,0,0,.5)">選擇車輛</h2>
+      <button class="btn plain center" data-act="menu" style="font-size:16px;padding:10px 16px">回主選單</button>
+    </div>
+    <div class="vgrid" id="vehList"></div>
+    <div class="keys">車越大越重：起步越慢、煞停距離越長、轉彎要繞越大圈。所有關卡都能用任何車輛挑戰。</div>
+  </div>
+</section>
+
+<!-- Intro -->
+<section class="screen" id="scrIntro">
+  <div class="stack"><div class="card">
+    <div class="chap" id="iChap"></div>
+    <h2><span class="lvid" id="iId"></span><span id="iName"></span></h2>
+    <p id="iGoal"></p>
+    <div class="chap" id="iVeh"></div>
+    <ul id="iRules"></ul>
+    <div class="row">
+      <button class="btn center" id="btnStart">開始駕駛</button>
+      <button class="btn plain center" data-act="levels">選擇關卡</button>
+    </div>
+  </div></div>
+</section>
+
+<!-- Result -->
+<section class="screen" id="scrResult">
+  <div class="stack"><div class="card result" id="rCard">
+    <div class="chap" id="rLv"></div>
+    <h2 id="rTitle"></h2>
+    <div class="reason" id="rMsg"></div>
+    <div class="row" id="rBtns"></div>
+  </div></div>
+</section>
+
+<!-- Pause -->
+<section class="screen" id="scrPause">
+  <div class="stack"><div class="card">
+    <h2>暫停</h2>
+    <div class="menu" style="margin-top:14px">
+      <button class="btn" data-act="resume">繼續駕駛</button>
+      <button class="btn plain" data-act="retry">重新開始本關</button>
+      <button class="btn plain" data-act="levels">選擇關卡</button>
+      <button class="btn plain" data-act="menu">回主選單</button>
+    </div>
+  </div></div>
+</section>
+
+<!-- Bye -->
+<section class="screen" id="scrBye">
+  <div class="stack"><div class="card" style="text-align:center">
+    <h2>已離開遊戲</h2>
+    <p>謝謝遊玩，開車記得打方向燈！現在可以直接關閉這個分頁。</p>
+    <div class="row"><button class="btn center" data-act="menu">回到主選單</button></div>
+  </div></div>
+</section>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const cv=$('#game');let ctx=cv.getContext('2d');
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();};
+}
+let VW=0,VH=0,DPR=1;
+function resize(){DPR=Math.min(2,window.devicePixelRatio||1);VW=window.innerWidth;VH=window.innerHeight;cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);}
+addEventListener('resize',resize);resize();
+
+/* ---------- constants & helpers ---------- */
+const W=90,LANE=45,FIL=70,STOP_Y=120,WORLD=2600,BAYW=40,TAPER=40;
+const ROAD='#3c4046',GRASS='#5b8c45',PAINT='#ecebe4',YEL='#f2c230';
+const PI=Math.PI;
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const KMH=v=>Math.abs(v)*0.36;           // 10 px = 1 m
+const angDiff=(a,b)=>{let d=(a-b)%(2*PI);if(d>PI)d-=2*PI;if(d<-PI)d+=2*PI;return d;};
+const CHAPTERS={1:'第一章　號誌路口',2:'第二章　道路規則',3:'第三章　進階挑戰與停車'};
+const CAR_COLORS=['#e8e4da','#2b6cb0','#b83227','#3a3f47','#e0a526','#7b8794','#1c7c54','#8e44ad'];
+
+const SKEY='drivingSchool.cleared.v1';
+let cleared=new Set();
+try{const s=localStorage.getItem(SKEY);if(s)cleared=new Set(JSON.parse(s));}catch(e){}
+function saveProg(){try{localStorage.setItem(SKEY,JSON.stringify([...cleared]));}catch(e){}}
+const VEHICLES=[
+ {id:'sedan',name:'一般轎車',len:44,wid:22,wb:28,acc:135,brk:330,maxV:230,steer:0.62,color:'#f26a1b',desc:'輕巧靈活，起步快、煞得住，最適合新手。'},
+ {id:'pickup',name:'小貨車',len:54,wid:24,wb:34,acc:108,brk:275,maxV:210,steer:0.63,color:'#2f7dd1',desc:'車身稍長，載著貨物，起步和煞車都慢一些。'},
+ {id:'truck',name:'大貨車',len:82,wid:28,wb:50,acc:72,brk:205,maxV:185,steer:0.68,color:'#d8342a',desc:'又長又重，要提早煞車，轉彎要繞大一點。'},
+ {id:'bus',name:'大客車',len:96,wid:28,wb:58,acc:62,brk:190,maxV:180,steer:0.7,color:'#1c8f52',desc:'車身最長，起步最慢、煞停距離最長，轉彎半徑最大。'},
+];
+const VKEY='drivingSchool.vehicle.v1';
+let vehIdx=0;
+try{const v=localStorage.getItem(VKEY);const i=VEHICLES.findIndex(x=>x.id===v);if(i>=0)vehIdx=i;}catch(e){}
+function saveVeh(){try{localStorage.setItem(VKEY,VEHICLES[vehIdx].id);}catch(e){}}
+
+function corners(o){const s=Math.sin(o.a),c=Math.cos(o.a),hl=o.len/2,hw=o.wid/2;
+  return [[hl,hw],[hl,-hw],[-hl,-hw],[-hl,hw]].map(([f,r])=>({x:o.x+s*f+c*r,y:o.y-c*f+s*r}));}
+function sat(A,B){const pa=corners(A),pb=corners(B);
+  for(const p of [pa,pb])for(let i=0;i<2;i++){const ax={x:-(p[i+1].y-p[i].y),y:p[i+1].x-p[i].x};
+    let a1=1e9,a2=-1e9,b1=1e9,b2=-1e9;
+    for(const q of pa){const d=q.x*ax.x+q.y*ax.y;if(d<a1)a1=d;if(d>a2)a2=d;}
+    for(const q of pb){const d=q.x*ax.x+q.y*ax.y;if(d<b1)b1=d;if(d>b2)b2=d;}
+    if(a2<b1||b2<a1)return false;}
+  return true;}
+function inBay(b,x,y,m){
+  if(!b||x<W-1)return false;
+  if(y>=b.y0&&y<=b.y1)return x<=b.x1+m;
+  if(y>b.y1&&y<=b.y1+TAPER)return x<=W+BAYW*(1-(y-b.y1)/TAPER)+m;
+  if(y<b.y0&&y>=b.y0-TAPER)return x<=W+BAYW*(1-(b.y0-y)/TAPER)+m;
+  return false;}
+function onRoad(g,x,y,m){
+  const map=g.L.map;
+  if(inBay(g.bay,x,y,m))return true;
+  if(map==='straight')return Math.abs(x)<=W+m&&Math.abs(y)<=WORLD;
+  if(Math.abs(x)<=W+m&&Math.abs(y)<=WORLD)return true;
+  if(Math.abs(y)<=W+m&&Math.abs(x)<=WORLD)return true;
+  const ax=Math.abs(x),ay=Math.abs(y);
+  if(ax<=W+FIL&&ay<=W+FIL){const dx=ax-(W+FIL),dy=ay-(W+FIL);if(dx*dx+dy*dy>=(FIL-m)*(FIL-m))return true;}
+  return false;}
+
+/* ---------- traffic streams ---------- */
+function makeStream(o){return Object.assign({cars:[],t:0,pi:0,vmax:160,len:2*WORLD+200,sStop:null,canGo:()=>true,pattern:[2.2],msg:'發生碰撞！'},o);}
+function stepStream(st,dt,g){
+  st.t-=dt;
+  if(st.t<=0){const last=st.cars[st.cars.length-1];
+    if(!last||last.s>75){st.cars.push({s:0,v:st.vmax*0.9,color:CAR_COLORS[(Math.random()*CAR_COLORS.length)|0]});st.t=st.pattern[st.pi++%st.pattern.length];}
+    else st.t=0.3;}
+  const go=st.canGo(g);
+  for(let i=0;i<st.cars.length;i++){const c=st.cars[i];let tgt=st.vmax;const f=c.s+22;
+    if(!go&&st.sStop!=null&&f<=st.sStop+2)tgt=Math.min(tgt,Math.max(0,(st.sStop-3-f)*2.2));
+    if(i>0){const gap=st.cars[i-1].s-c.s-44-14;tgt=Math.min(tgt,Math.max(0,gap*2.4));}
+    if(st.follow&&g&&g.car){const p=g.car,lat=st.dx?(p.y-st.y0):(p.x-st.x0);
+      if(Math.abs(lat)<24){const ps=(p.x-st.x0)*st.dx+(p.y-st.y0)*st.dy,gap=ps-c.s-p.len/2-22-12;if(gap>-10)tgt=Math.min(tgt,Math.max(0,gap*2.4));}}
+    c.v+=clamp(tgt-c.v,-420*dt,140*dt);if(c.v<0)c.v=0;c.s+=c.v*dt;}
+  while(st.cars.length&&st.cars[0].s>st.len)st.cars.shift();}
+function streamObjs(st){return st.cars.map(c=>({x:st.x0+st.dx*c.s,y:st.y0+st.dy*c.s,a:st.a,len:44,wid:22,color:c.color,msg:st.msg,braking:c.v<st.vmax*0.6,kind:'car'}));}
+
+function mkPed(x,y,vx,vy,color){return {x,y,vx,vy,color,ph:Math.random()*6};}
+function movePeds(g,dt,msg){for(const p of g.peds){p.x+=p.vx*dt;p.y+=p.vy*dt;p.ph+=dt*9;g.obstacles.push({x:p.x,y:p.y,a:0,len:20,wid:20,msg,kind:'ped'});}}
+const distM=g=>(g.fy-g.L.stopLineY)/10;
+
+/* ---------- levels ---------- */
+const LEVELS=[
+{id:'1-1',chapter:1,name:'停紅燈',map:'cross',stopLineY:STOP_Y,start:{x:67.5,y:720},
+ goal:'前方是紅燈。減速後把車停在停止線前 5 公尺以內，停穩就過關。',
+ rules:['車頭超過停止線 → 失敗（闖紅燈）','停下時距離停止線超過 5 公尺 → 失敗','在停止線前 5 公尺內停穩 1 秒 → 過關'],
+ setup(g){g.light={r:1,y:0,g:0,left:0};},
+ update(g){if(!g.crossed&&g.moved&&g.stopT>1){const d=distM(g);
+   if(d<=5)g.win(`停車位置距離停止線 ${d.toFixed(1)} 公尺，停得漂亮！`);
+   else g.fail(`停車位置離停止線太遠（${d.toFixed(1)} 公尺）。紅燈時應停在停止線前 5 公尺以內。`);}},
+ onStopLine(g){g.fail('車頭超越停止線：紅燈時必須停在停止線之前。');}},
+
+{id:'1-2',chapter:1,name:'左轉專用燈',map:'cross',stopLineY:STOP_Y,arrow:true,exitDir:'left',start:{x:22.5,y:720},
+ goal:'先在紅燈前停車。等綠色左轉箭頭亮起後，按 Q 打左轉方向燈，從內側車道左轉。',
+ rules:['左轉箭頭還沒亮就駛越停止線 → 失敗','左轉時沒打左轉方向燈 → 失敗','不是從內側車道左轉 → 失敗','直行或右轉 → 失敗'],
+ setup(g){g.light={r:1,y:0,g:0,left:0};g.waitT=0;},
+ update(g,dt){if(g.moved&&g.stopT>0.2)g.waitT+=dt;if(!g.light.left&&(g.waitT>2.2||g.t>18))g.light.left=1;},
+ onStopLine(g){
+   if(!g.light.left)return g.fail('左轉箭頭還沒亮起就駛越停止線，等於闖紅燈。');
+   if(g.car.signal!=='left')return g.fail('左轉時沒有打左轉方向燈（按 Q）。');
+   if(g.car.x>LANE)return g.fail('左轉要從內側車道（靠中線那條）進入路口。');},
+ info:g=>g.light.left?'左轉箭頭亮了：打左轉燈再轉':'停車等候左轉箭頭',
+ wrongExit:d=>d==='straight'?'只亮左轉箭頭時直行，等於闖紅燈。':d==='right'?'紅燈時右轉，等於闖紅燈。':'沒有依指示左轉。',
+ winMsg:'看清左轉箭頭、打好方向燈，順利左轉！'},
+
+{id:'1-3',chapter:1,name:'綠燈右轉讓行人',map:'cross',stopLineY:STOP_Y,exitDir:'right',start:{x:67.5,y:720},
+ goal:'綠燈可以走。按 E 打右轉方向燈，從外側車道右轉。轉過去的斑馬線上有行人時，要停下來讓他先走。',
+ rules:['右轉時沒打右轉方向燈 → 失敗','不是從外側車道右轉 → 失敗','行人還在斑馬線上就開進去 → 失敗','直行或左轉 → 失敗'],
+ setup(g){g.light={r:0,y:0,g:1,left:0};},
+ update(g,dt){
+   if(!g.pedOn&&g.car.y<430){g.pedOn=1;g.peds.push(mkPed(104,-160,0,44,'#e0457b'));}
+   movePeds(g,dt,'撞到行人了！轉彎車必須禮讓行人。');
+   const p=g.peds[0];
+   if(p&&p.y>-25&&p.y<105&&sat(g.car,{x:104,y:45,a:0,len:92,wid:22}))g.fail('行人正在走斑馬線，右轉車必須停下禮讓，等行人走過再開。');
+   g.peds=g.peds.filter(p=>p.y<400);},
+ onStopLine(g){
+   if(g.car.signal!=='right')return g.fail('右轉時沒有打右轉方向燈（按 E）。');
+   if(g.car.x<LANE)return g.fail('右轉要從外側車道（靠路邊那條）進入路口。');},
+ info:g=>g.peds.length&&g.peds[0].y>-25&&g.peds[0].y<105?'斑馬線上有行人，請等候':'',
+ wrongExit:()=>'本關要在路口右轉。',winMsg:'打方向燈、禮讓行人，漂亮的右轉！'},
+
+{id:'1-4',chapter:1,name:'紅燈轉綠燈',map:'cross',stopLineY:STOP_Y,exitDir:'straight',start:{x:67.5,y:720},
+ goal:'紅燈時橫向車流正在通過。停在停止線前等候，號誌轉綠、橫向車停下後，再直行通過路口。',
+ rules:['紅燈時駛越停止線 → 失敗','直行卻打方向燈 → 失敗','撞到橫向車輛 → 失敗','轉彎 → 失敗'],
+ setup(g){g.light={r:1,y:0,g:0,left:0};g.crossGo=true;g.phT=0;
+   const go=g=>g.crossGo,msg='和橫向來車發生碰撞！';
+   g.streams.push(
+     makeStream({x0:-WORLD-100,y0:67.5,dx:1,dy:0,a:PI/2,sStop:WORLD+100-STOP_Y,canGo:go,pattern:[2.3,3.2,1.9],msg}),
+     makeStream({x0:WORLD+100,y0:-67.5,dx:-1,dy:0,a:-PI/2,sStop:WORLD+100-STOP_Y,canGo:go,pattern:[2.8,1.8,3.4],msg,t:1}));},
+ update(g,dt){if(!g.phT&&g.moved&&g.stopT>0.3)g.phT=0.001;
+   if(g.phT){g.phT+=dt;if(g.phT>0.6)g.crossGo=false;if(g.phT>3.6){g.light.r=0;g.light.g=1;}}},
+ onStopLine(g){
+   if(!g.light.g)return g.fail('紅燈時駛越停止線，闖紅燈了。');
+   if(g.car.signal)return g.fail('直行不需要打方向燈，亂打會讓其他駕駛誤判你的動向。');},
+ info:g=>g.light.g?'綠燈，可以直行':'紅燈，停車等候',
+ wrongExit:()=>'本關要直行通過路口。',winMsg:'耐心等到綠燈，安全直行通過！'},
+
+{id:'2-1',chapter:2,name:'停止標誌',map:'cross',stopLineY:STOP_Y,exitDir:'straight',stopSign:true,start:{x:67.5,y:720},
+ goal:'這個路口沒有紅綠燈，只有「停」標誌。先在停止線前完全停車，看準左右幹道車流的空檔，再直行通過。',
+ rules:['沒有在停止線前（8 公尺內）完全停車就通過 → 失敗','撞到幹道來車 → 失敗','轉彎 → 失敗'],
+ setup(g){const msg='和幹道來車碰撞！「停」標誌路口，支道車必須讓幹道車先行。';
+   g.streams.push(
+     makeStream({x0:-WORLD-100,y0:67.5,dx:1,dy:0,a:PI/2,pattern:[3.4,1.4,5.2],vmax:170,msg}),
+     makeStream({x0:WORLD+100,y0:-22.5,dx:-1,dy:0,a:-PI/2,pattern:[4.4,2.0,5.8],vmax:170,msg,t:2}));},
+ update(g){if(!g.crossed&&g.stopT>0.8&&g.fy>=STOP_Y&&distM(g)<=8)g.didStop=true;},
+ onStopLine(g){if(!g.didStop)g.fail('看到「停」標誌，必須先在停止線前完全停車，確認安全才能通過。');},
+ info:g=>g.didStop?'已完全停車 ✓ 看準空檔再通過':'先在停止線前完全停車',
+ wrongExit:()=>'本關要直行通過路口。',winMsg:'停車再開、看準空檔，安全通過！'},
+
+{id:'2-2',chapter:2,name:'禮讓行人',map:'straight',stopLineY:60,finishY:-500,start:{x:67.5,y:760},
+ goal:'前方斑馬線有行人要過馬路。在停止線前停車，等行人完全走過，再開到終點線。',
+ rules:['行人在斑馬線上時駛越停止線 → 失敗','撞到行人 → 失敗','開到終點線 → 過關'],
+ update(g,dt){
+   if(!g.pedOn&&g.car.y<560){g.pedOn=1;g.peds.push(mkPed(-150,6,48,0,'#e0457b'),mkPed(-200,26,42,0,'#3d7be0'));}
+   movePeds(g,dt,'撞到行人了！');
+   g.peds=g.peds.filter(p=>p.x<W+80);},
+ onStopLine(g){if(g.peds.some(p=>p.x>-W-12&&p.x<W+8))g.fail('行人正在走斑馬線，車輛必須停在停止線前禮讓。');},
+ info:g=>g.peds.some(p=>p.x>-W-12&&p.x<W+8)?'行人通過中，請停車等候':'',
+ drawUnder(){zebra(-20,64);ctx.fillStyle=PAINT;ctx.fillRect(4,60,W-8,5);ctx.fillRect(-W+4,-49,W-8,5);},
+ drawOver(){blueSign(W+26,110,'行人');},
+ winMsg:'耐心等行人通過，做得好！'},
+
+{id:'2-3',chapter:2,name:'速限 40',map:'straight',finishY:-1560,start:{x:67.5,y:760},limit:40,
+ goal:'進入速限區（紅圈 40 標誌）後，時速不能超過 40 km/h，並且要在 28 秒內開到終點線。',
+ rules:['速限區內超過 40 km/h → 失敗','超過 28 秒還沒到終點 → 失敗','開到終點線 → 過關'],
+ update(g){const inZone=g.car.y<300&&g.car.y>-1500;g.inZone=inZone;const k=KMH(g.car.v);
+   if(inZone&&k>41)g.fail(`超速了！時速 ${Math.round(k)} km/h，這段路速限 40 km/h。`);
+   if(g.t>28)g.fail('超過 28 秒還沒到終點。開太慢也會影響後方交通。');},
+ info:g=>`${g.inZone?'速限區內':g.car.y<=-1500?'已離開速限區':'前方速限 40'}　剩 ${Math.max(0,28-g.t).toFixed(1)} 秒`,
+ drawUnder(){ctx.save();ctx.fillStyle=PAINT;ctx.font='900 34px "Chakra Petch",sans-serif';ctx.textAlign='center';
+   ctx.fillText('40',67.5,250);ctx.fillText('40',22.5,250);ctx.restore();},
+ drawOver(){limitSign(W+26,300,'40');limitSign(-W-26,300,'40');endSign(W+26,-1500);},
+ winMsg:g=>`用時 ${g.t.toFixed(1)} 秒，全程遵守速限！`},
+
+{id:'2-4',chapter:2,name:'施工變換車道',map:'straight',finishY:-850,start:{x:67.5,y:760},
+ goal:'外側車道前方施工。按 Q 打左轉方向燈換到內側車道；過了施工區，再按 E 打右轉方向燈回到外側車道，開到終點。',
+ rules:['換車道沒打對應的方向燈 → 失敗（換完後方向燈會自動回正）','撞到三角錐或施工護欄 → 失敗','通過施工區後沒回到外側車道 → 失敗'],
+ setup(g){g.lane='out';const msg='撞到施工區的三角錐了！';
+   g.cones=[[86,230],[77,200],[68,170],[59,140]];for(let y=110;y>=-360;y-=40)g.cones.push([52,y]);
+   g.coneObjs=g.cones.map(([x,y])=>({x,y,a:0,len:14,wid:14,msg}));
+   g.coneObjs.push({x:70,y:128,a:PI/2,len:38,wid:8,msg:'撞上施工護欄了！'});},
+ update(g){g.obstacles.push(...g.coneObjs);const c=g.car;
+   if(c.y<-1100&&g.lane==='in')g.fail('通過施工區後，應打右轉方向燈回到外側車道。');},
+ canFinish:g=>g.lane==='out',
+ info:g=>g.lane==='out'&&g.car.y>-360?'前方施工：打左轉燈換到內側':g.lane==='in'&&g.car.y<-380?'已過施工區：打右轉燈回外側':'',
+ drawUnder(){ctx.save();ctx.beginPath();ctx.rect(50,-370,W-50,510);ctx.clip();ctx.fillStyle='rgba(255,199,44,.22)';ctx.fillRect(50,-370,W-50,510);
+   ctx.strokeStyle='rgba(255,199,44,.55)';ctx.lineWidth=6;for(let y=-420;y<200;y+=28){ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(W+10,y+50);ctx.stroke();}ctx.restore();},
+ drawOver(g){for(const [x,y] of g.cones)cone(x,y);
+   ctx.save();ctx.translate(70,128);ctx.fillStyle='#fff';ctx.fillRect(-19,-4,38,8);ctx.fillStyle='#e8541e';for(let i=0;i<4;i++)ctx.fillRect(-19+i*10,-4,5,8);ctx.restore();
+   warnSign(W+26,340,'施工');},
+ winMsg:'方向燈打得清清楚楚，順利繞過施工區！'},
+
+{id:'3-1',chapter:3,name:'平交道',map:'straight',stopLineY:95,finishY:-450,start:{x:67.5,y:760},rail:true,
+ goal:'前方是平交道。通過前一定要先在停止線前停車（停、看、聽）；警鈴響、柵欄放下時絕對不能過，等火車過去、柵欄升起再通過。',
+ rules:['沒先停車就通過平交道 → 失敗','警鈴響或柵欄放下時穿越 → 失敗','撞到柵欄或火車 → 失敗'],
+ setup(g){g.rail={state:'idle',t:0,arm:0,trainX:null};},
+ update(g,dt){const r=g.rail;r.t+=dt;
+   if(r.state==='idle'&&g.car.y<600){r.state='alarm';r.t=0;}
+   if(r.state==='alarm'){r.arm=Math.min(1,r.arm+dt/2);if(r.t>2.2&&r.trainX==null)r.trainX=-1700;}
+   if(r.trainX!=null){r.trainX+=520*dt;if(r.state==='alarm'&&r.trainX-560>W+40){r.state='clear';r.t=0;}if(r.trainX-560>WORLD)r.trainX=null;}
+   if(r.state==='clear'&&r.t>1){r.arm=Math.max(0,r.arm-dt/2);if(r.arm===0)r.state='done';}
+   g.alarm=r.state==='alarm'||r.state==='clear';
+   if(!g.crossed&&g.stopT>1&&g.fy>=95&&g.fy<=195)g.didStop=true;
+   if(r.trainX!=null)g.obstacles.push({x:r.trainX-280,y:0,a:PI/2,len:560,wid:36,msg:'被火車撞上了！警鈴響時絕對不可以穿越平交道。'});
+   if(r.arm>0.6)g.obstacles.push({x:55,y:45,a:PI/2,len:90,wid:6,msg:'撞上平交道柵欄了！'});},
+ onStopLine(g){
+   if(g.alarm)return g.fail('平交道警鈴正在響、柵欄放下，禁止穿越！');
+   if(!g.didStop)return g.fail('通過平交道前，必須先在停止線前停車（停、看、聽）。');},
+ info:g=>g.alarm?'警鈴作響，禁止通過':g.didStop?'已停車 ✓ 確認安全後通過':'通過前要先停車：停、看、聽',
+ drawUnder(g){drawRail();ctx.fillStyle=PAINT;ctx.fillRect(4,95,W-8,5);ctx.fillRect(-W+4,-100,W-8,5);
+   ctx.save();ctx.font='900 24px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.fillText('停',67.5,190);ctx.fillText('看',67.5,220);ctx.fillText('聽',67.5,250);ctx.restore();},
+ drawOver(g){drawRailOver(g);},
+ winMsg:'停、看、聽，安全通過平交道！'},
+
+{id:'3-2',chapter:3,name:'綠燈左轉讓直行',map:'cross',stopLineY:STOP_Y,exitDir:'left',start:{x:22.5,y:720},
+ goal:'圓形綠燈、沒有左轉箭頭。打左轉方向燈從內側車道進入路口，對向直行車先走，看準空檔再左轉。',
+ rules:['左轉時沒打左轉方向燈 → 失敗','不是從內側車道左轉 → 失敗','撞到對向直行車 → 失敗','直行或右轉 → 失敗'],
+ setup(g){g.light={r:0,y:0,g:1,left:0};const msg='左轉沒有禮讓對向直行車！轉彎車要讓直行車先行。';
+   g.streams.push(
+     makeStream({x0:-22.5,y0:-WORLD-100,dx:0,dy:1,a:PI,pattern:[1.1,1.1,1.1,6.8],vmax:185,msg}),
+     makeStream({x0:-67.5,y0:-WORLD-100,dx:0,dy:1,a:PI,pattern:[1.5,8.6],vmax:175,msg,t:0.5}));},
+ onStopLine(g){
+   if(g.car.signal!=='left')return g.fail('左轉時沒有打左轉方向燈（按 Q）。');
+   if(g.car.x>LANE)return g.fail('左轉要從內側車道（靠中線那條）進入路口。');},
+ info:()=>'對向直行車先行，看準空檔再轉',
+ wrongExit:d=>d==='straight'?'本關要左轉，不是直行。':'本關要左轉，不是右轉。',
+ winMsg:'轉彎車讓直行車，看準空檔完美左轉！'},
+{id:'3-3',chapter:3,name:'路邊停車',map:'straight',start:{x:67.5,y:760},
+ goal:'把車停進前方路邊的黃色停車格。離開車道靠邊前先按 E 打右轉方向燈，整台車要停在格子裡、車身擺正。',
+ rules:['靠邊前沒打右轉方向燈 → 失敗','停下時車身還壓在車道上、超出格線或歪斜 → 失敗','錯過停車格、撞到路邊停的車 → 失敗','完整停進格子裡停穩 1.5 秒 → 過關'],
+ setup(g){const len=g.car.len,bot=-380,top=bot-(len+44);g.slot={top,bot};
+   g.parked=[{x:W+20,y:top-32,a:0,len:44,wid:22,color:'#7b8794',msg:'撞到路邊停放的車了！'}];
+   g.bay={x1:W+BAYW,y0:top-75,y1:-60};},
+ update(g){g.obstacles.push(...g.parked);const c=g.car,cs=corners(c);
+   const xs=cs.map(p=>p.x),ys=cs.map(p=>p.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+   if(!g.enteredBay&&maxX>W+3){g.enteredBay=true;if(c.signal!=='right')return g.fail('離開車道靠邊停車前，沒有打右轉方向燈（按 E）。');}
+   if(g.enteredBay&&g.stopT>1.5&&maxY>g.slot.top&&minY<g.slot.bot){
+     if(minX<W-3)return g.fail('車身沒有完全靠進路邊，還有一部分壓在車道上。');
+     if(minY<g.slot.top-2||maxY>g.slot.bot+2)return g.fail('車子沒有完整停在停車格內，超出了格線。');
+     if(Math.abs(angDiff(c.a,0))>0.14)return g.fail('車身歪斜，沒有和路邊平行。');
+     return g.win('打方向燈、靠邊、停正，一次到位！');}
+   if(!g.enteredBay&&c.y<g.slot.top-60)g.fail('錯過停車格了。');},
+ info:g=>g.enteredBay?'慢慢開進格子裡，車身擺正後停穩':(g.car.signal==='right'?'方向燈已打 ✓ 可以靠邊':'靠邊前先打右轉方向燈'),
+ drawUnder(g){drawBay(g);slotBox(g.slot.top,g.slot.bot,true);for(const o of g.parked)drawCar(o);},
+ drawOver(){blueSign(W+BAYW+26,-300,'P');}},
+
+{id:'3-4',chapter:3,name:'路邊起步',map:'straight',finishY:-1400,start:{x:W+20,y:-300},
+ goal:'車子停在路邊。起步前先按 Q 打左轉方向燈，等後方車流過去、出現空檔，再駛回車道開到終點。',
+ rules:['從路邊駛入車道前沒打左轉方向燈 → 失敗','切入車道時撞到後方來車 → 失敗','撞到前後停放的車 → 失敗','回到車道開到終點 → 過關'],
+ setup(g){const len=g.car.len,gap=45+len*0.6;
+   const ahead={x:W+20,y:-300-len/2-gap-22,a:0,len:44,wid:22,color:'#e0a526',msg:'撞到前方停放的車了！'};
+   const behind={x:W+20,y:-300+len/2+28+22,a:0,len:44,wid:22,color:'#3a3f47',msg:'撞到後方停放的車了！'};
+   g.parked=[ahead,behind];g.bay={x1:W+BAYW,y0:ahead.y-70,y1:behind.y+70};
+   g.slot={top:-300-len/2-16,bot:-300+len/2+16};
+   g.streams.push(makeStream({x0:67.5,y0:WORLD+100,dx:0,dy:-1,a:0,pattern:[1.3,1.3,1.3,7.5],vmax:190,follow:true,msg:'從路邊切入車道時，沒有禮讓後方直行來車！'}));},
+ update(g){g.obstacles.push(...g.parked);const c=g.car,minX=Math.min(...corners(c).map(p=>p.x));
+   if(!g.leftBay&&minX<W-3){g.leftBay=true;if(c.signal!=='left')return g.fail('從路邊駛入車道前，沒有打左轉方向燈（按 Q）。');}},
+ canFinish:g=>g.car.x<W,
+ info:g=>g.leftBay?'':(g.car.signal==='left'?'方向燈已打 ✓ 等後方車流出現空檔':'起步前先打左轉方向燈'),
+ drawUnder(g){drawBay(g);slotBox(g.slot.top,g.slot.bot,false);for(const o of g.parked)drawCar(o);},
+ winMsg:'打方向燈、看準空檔，平穩駛回車道！'},
+];
+
+/* ---------- player car ---------- */
+function makeCar(x,y,a,sp){return {x,y,a,v:0,steer:0,len:sp.len,wid:sp.wid,color:sp.color,type:sp.id,spec:sp,signal:null,sigA0:0,braking:false,hold:0,player:true};}
+function updateCar(c,dt,inp){
+  const sp=c.spec,MAXV=sp.maxV,ACC=sp.acc,BRK=sp.brk,DRAG=24,REV=-60;
+  c.braking=false;
+  if(inp.down){
+    if(c.v>0){c.v=Math.max(0,c.v-BRK*dt);c.braking=true;c.hold=0;}
+    else{c.hold+=dt;c.braking=true;if(c.hold>0.45)c.v=Math.max(REV,c.v-ACC*0.6*dt);}
+  }else c.hold=0;
+  if(inp.up){if(c.v<0)c.v=Math.min(0,c.v+BRK*dt);else c.v=Math.min(MAXV,c.v+ACC*(1-c.v/(MAXV*1.15))*dt);}
+  if(!inp.up&&!inp.down){const d=DRAG*dt;c.v=Math.abs(c.v)<=d?0:c.v-Math.sign(c.v)*d;}
+  const maxS=sp.steer/(1+Math.abs(c.v)/260);
+  const tgt=((inp.right?1:0)-(inp.left?1:0))*maxS;
+  c.steer+=clamp(tgt-c.steer,-3.2*dt,3.2*dt);
+  c.a+=c.v/sp.wb*Math.tan(c.steer)*dt;
+  c.x+=Math.sin(c.a)*c.v*dt;c.y-=Math.cos(c.a)*c.v*dt;
+}
+
+/* ---------- game state ---------- */
+let G=null,cur=0,mode='menu';
+const cam={x:0,y:0};
+function newGame(i){
+  const L=LEVELS[i];
+  const g={L,t:0,car:makeCar(L.start.x,L.start.y,0,VEHICLES[vehIdx]),moved:false,stopT:0,crossed:false,inBox:false,exited:null,over:false,
+    obstacles:[],streams:[],peds:[],light:null,fy:0,msg:''};
+  g.fail=m=>{if(g.over)return;g.over='fail';g.msg=m;endLevel(g);};
+  g.win=m=>{if(g.over)return;g.over='win';g.msg=typeof m==='function'?m(g):m;endLevel(g);};
+  L.setup&&L.setup(g);
+  g.streams.forEach(st=>{for(let k=0;k<1200;k++)stepStream(st,1/60,g);});
+  g.fy=g.car.y-22;
+  cam.x=g.car.x;cam.y=g.car.y-150;
+  return g;
+}
+function step(g,dt){
+  const L=g.L,c=g.car;g.t+=dt;
+  updateCar(c,dt,{up:keyOn('up'),down:keyOn('down'),left:keyOn('left'),right:keyOn('right')});
+  if(Math.abs(c.v)>25)g.moved=true;
+  g.stopT=Math.abs(c.v)<1.5?g.stopT+dt:0;
+  if(c.signal&&Math.abs(angDiff(c.a,c.sigA0))>1.1&&Math.abs(c.steer)<0.08)c.signal=null; // auto-cancel after a turn
+  if(g.sigCancel>0){g.sigCancel-=dt;if(g.sigCancel<=0){if(Math.abs(c.steer)<0.05)c.signal=null;else g.sigCancel=0.1;}}
+  const cs=corners(c);g.fy=Math.min(cs[0].y,cs[1].y,cs[2].y,cs[3].y);
+  g.obstacles.length=0;
+  for(const st of g.streams){stepStream(st,dt,g);g.obstacles.push(...streamObjs(st));}
+  L.update&&L.update(g,dt);if(g.over)return;
+  if(L.stopLineY!=null&&!g.crossed&&g.fy<L.stopLineY&&c.x>-W){g.crossed=true;L.onStopLine&&L.onStopLine(g);if(g.over)return;}
+  if(L.map==='cross'){
+    const B=W+FIL-10,inBox=g.crossed&&Math.abs(c.x)<B&&Math.abs(c.y)<B;
+    if(inBox)g.inBox=true;
+    else if(g.inBox&&!g.exited){
+      const d=c.y<-B?'straight':c.x<-B?'left':c.x>B?'right':'back';g.exited=d;
+      if(L.exitDir&&d!==L.exitDir)return g.fail(L.wrongExit?L.wrongExit(d):'沒有依指示方向行駛。');}
+  }
+  for(const o of g.obstacles)if(sat(c,o))return g.fail(o.msg);
+  for(const p of cs)if(!onRoad(g,p.x,p.y,4))return g.fail('車子開出道路了（壓上路緣或草地）。');
+  // wrong-way check
+  const dx=Math.sin(c.a),dy=-Math.cos(c.a);
+  const nearBox=L.map==='cross'&&Math.abs(c.x)<W+FIL+10&&Math.abs(c.y)<W+FIL+10;
+  if(!nearBox){
+    let wrong=false;
+    if(Math.abs(c.x)<=W&&(L.map==='straight'||Math.abs(c.y)>W)){if((dy<-0.6&&c.x<-6)||(dy>0.6&&c.x>6))wrong=true;}
+    else if(L.map==='cross'&&Math.abs(c.y)<=W){if((dx<-0.6&&c.y>6)||(dx>0.6&&c.y<-6))wrong=true;}
+    if(wrong)return g.fail('逆向行駛！車子跨過中線開進對向車道。');
+    // lane change detection (all levels)
+    let seg=null,lat=0;
+    if(Math.abs(c.x)<=W+BAYW+5&&(L.map==='straight'||Math.abs(c.y)>W+FIL+10)){seg='v';lat=Math.abs(c.x);}
+    else if(L.map==='cross'&&Math.abs(c.y)<=W){seg='h';lat=Math.abs(c.y);}
+    if(seg){
+      if(g.laneSeg!==seg){g.laneSeg=seg;g.lane=lat>W?'bay':lat<LANE?'in':'out';}
+      else{let nl=g.lane;
+        if(lat>W+2)nl='bay';else if(lat<LANE-4)nl='in';else if(lat>LANE+4&&lat<=W)nl='out';
+        if(nl!==g.lane){const prev=g.lane;g.lane=nl;
+          if(prev!=='bay'&&nl!=='bay'){const need=nl==='in'?'left':'right';
+            if(c.signal!==need)return g.fail(`變換車道時沒有打${need==='left'?'左轉方向燈（按 Q）':'右轉方向燈（按 E）'}。所有關卡換車道都必須先打方向燈。`);
+            g.sigCancel=1.2;}}}
+    }
+  }else g.laneSeg=null;
+  if(L.map==='cross'&&g.exited&&Math.max(Math.abs(c.x),Math.abs(c.y))>W+FIL+70)return g.win(L.winMsg||'過關！');
+  if(L.finishY!=null&&c.y<L.finishY&&(!L.canFinish||L.canFinish(g)))return g.win(L.winMsg||'過關！');
+}
+
+/* ---------- drawing ---------- */
+function hash(ix,iy){let n=Math.imul(ix,374761393)+Math.imul(iy,668265263);n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295;}
+function drawTrees(L,x0,x1,y0,y1){
+  const T=120;
+  for(let ix=Math.floor(x0/T)-1;ix<=Math.ceil(x1/T);ix++)for(let iy=Math.floor(y0/T)-1;iy<=Math.ceil(y1/T);iy++){
+    const h=hash(ix,iy);if(h>0.55)continue;
+    const x=ix*T+hash(ix+7,iy)*80,y=iy*T+hash(ix,iy+9)*80;
+    if(Math.abs(x)<W+55)continue;
+    if(L.map==='cross'&&Math.abs(y)<W+55)continue;
+    if(L.rail&&Math.abs(y)<75)continue;
+    const r=16+h*26;
+    ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.arc(x+6,y+7,r,0,7);ctx.fill();
+    ctx.fillStyle=h<0.2?'#2f6b35':'#3c7a3a';ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.1)';ctx.beginPath();ctx.arc(x-r*0.3,y-r*0.3,r*0.5,0,7);ctx.fill();
+  }
+}
+function laneArrow(x,y,type){
+  ctx.save();ctx.strokeStyle=PAINT;ctx.fillStyle=PAINT;ctx.lineWidth=4;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x,y+26);ctx.lineTo(x,y-10);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x,y-22);ctx.lineTo(x-7,y-9);ctx.lineTo(x+7,y-9);ctx.fill();
+  const s=type==='L'?-1:1;
+  ctx.beginPath();ctx.moveTo(x,y+10);ctx.quadraticCurveTo(x,y,x+s*11,y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+s*20,y);ctx.lineTo(x+s*10,y-7);ctx.lineTo(x+s*10,y+7);ctx.fill();
+  ctx.restore();
+}
+function zebra(y,h){ctx.fillStyle=PAINT;for(let x=-W+5;x<W-5;x+=15)ctx.fillRect(x,y,8,h);}
+function drawArm(stopSign){
+  ctx.fillStyle=YEL;ctx.fillRect(-4,STOP_Y,2.5,WORLD-STOP_Y);ctx.fillRect(1.5,STOP_Y,2.5,WORLD-STOP_Y);
+  ctx.fillStyle=PAINT;
+  ctx.fillRect(LANE-1.5,STOP_Y+5,3,70);ctx.fillRect(-LANE-1.5,STOP_Y+5,3,70);
+  for(let y=STOP_Y+110;y<WORLD;y+=60){ctx.fillRect(LANE-1.5,y,3,30);ctx.fillRect(-LANE-1.5,y,3,30);}
+  ctx.fillRect(W-6,W+FIL,2.5,WORLD-W-FIL);ctx.fillRect(-W+3.5,W+FIL,2.5,WORLD-W-FIL);
+  ctx.fillRect(4,STOP_Y,W-8,5);
+  ctx.save();ctx.translate(0,W+5);zebra(0,STOP_Y-W-12);ctx.restore();
+  if(stopSign){ctx.save();ctx.font='900 30px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.fillText('停',22.5,STOP_Y+60);ctx.fillText('停',67.5,STOP_Y+60);ctx.restore();}
+  else{laneArrow(22.5,STOP_Y+110,'L');laneArrow(67.5,STOP_Y+110,'R');}
+}
+function drawRoads(L){
+  ctx.fillStyle=ROAD;
+  if(L.map==='straight'){
+    ctx.fillRect(-W,-WORLD,2*W,2*WORLD);
+    ctx.fillStyle=YEL;ctx.fillRect(-4,-WORLD,2.5,2*WORLD);ctx.fillRect(1.5,-WORLD,2.5,2*WORLD);
+    ctx.fillStyle=PAINT;
+    for(let y=-WORLD;y<WORLD;y+=60){ctx.fillRect(LANE-1.5,y,3,30);ctx.fillRect(-LANE-1.5,y,3,30);}
+    ctx.fillRect(W-6,-WORLD,2.5,2*WORLD);ctx.fillRect(-W+3.5,-WORLD,2.5,2*WORLD);
+    return;
+  }
+  ctx.fillRect(-W,-WORLD,2*W,2*WORLD);ctx.fillRect(-WORLD,-W,2*WORLD,2*W);
+  for(const [sx,sy] of [[1,1],[1,-1],[-1,1],[-1,-1]]){
+    ctx.save();ctx.scale(sx,sy);ctx.beginPath();ctx.moveTo(W-1,W-1);ctx.lineTo(W+FIL,W-1);ctx.lineTo(W+FIL,W);
+    ctx.arc(W+FIL,W+FIL,FIL,-PI/2,PI,true);ctx.lineTo(W-1,W+FIL);ctx.closePath();ctx.fill();ctx.restore();
+  }
+  for(let k=0;k<4;k++){ctx.save();ctx.rotate(k*PI/2);drawArm(L.stopSign&&k===0);ctx.restore();}
+}
+function finishLine(y){const s=15;for(let x=-W;x<W;x+=s)for(let r=0;r<2;r++){ctx.fillStyle=((x/s|0)+r)%2?'#111':'#fff';ctx.fillRect(x,y-r*s,s,s);}}
+
+function drawCar(o){
+  ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);
+  const L=o.len,Wd=o.wid,hl=L/2,hw=Wd/2,t=o.type||'sedan';
+  ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.roundRect(-hw+3,-hl+4,Wd,L,6);ctx.fill();
+  const glass='rgba(18,26,34,.88)';
+  if(t==='sedan'){
+    ctx.fillStyle=o.color;ctx.beginPath();ctx.roundRect(-hw,-hl,Wd,L,6);ctx.fill();
+    ctx.fillStyle=glass;ctx.beginPath();ctx.roundRect(-hw+3,-hl+10,Wd-6,8,2);ctx.fill();
+    ctx.beginPath();ctx.roundRect(-hw+3,hl-11,Wd-6,6,2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.16)';ctx.fillRect(-hw+4,-hl+19,Wd-8,14);
+    if(o.player){ctx.fillStyle='#ffd83d';ctx.fillRect(-6,-hl+21,12,8);ctx.fillStyle='#111';ctx.font='900 7px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('練',0,-hl+25.5);}
+  }else if(t==='pickup'){
+    ctx.fillStyle=o.color;ctx.beginPath();ctx.roundRect(-hw,-hl,Wd,23,5);ctx.fill();
+    ctx.fillStyle=glass;ctx.beginPath();ctx.roundRect(-hw+3,-hl+8,Wd-6,6,2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(-hw+4,-hl+15,Wd-8,6);
+    ctx.fillStyle=o.color;ctx.fillRect(-hw,-hl+24,Wd,L-24);
+    ctx.fillStyle='#5d636b';ctx.fillRect(-hw+2.5,-hl+26,Wd-5,L-28.5);
+    ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=1;for(let y=-hl+31;y<hl-3;y+=6){ctx.beginPath();ctx.moveTo(-hw+3,y);ctx.lineTo(hw-3,y);ctx.stroke();}
+    ctx.fillStyle='#b98a52';ctx.fillRect(-hw+5,-hl+29,8,8);ctx.fillRect(-1,-hl+33,8,9);
+  }else if(t==='truck'){
+    ctx.fillStyle=o.color;ctx.beginPath();ctx.roundRect(-hw+1,-hl,Wd-2,20,5);ctx.fill();
+    ctx.fillStyle=glass;ctx.beginPath();ctx.roundRect(-hw+4,-hl+4,Wd-8,6,2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(-hw+5,-hl+12,Wd-10,5);
+    ctx.fillStyle='#2b2e33';ctx.fillRect(-4,-hl+20,8,4);
+    ctx.fillStyle='#eceae2';ctx.fillRect(-hw,-hl+23,Wd,L-23);
+    ctx.strokeStyle='#c7c4ba';ctx.lineWidth=1.2;for(let y=-hl+30;y<hl-2;y+=8){ctx.beginPath();ctx.moveTo(-hw+1,y);ctx.lineTo(hw-1,y);ctx.stroke();}
+    ctx.fillStyle=o.color;ctx.fillRect(-hw,-hl+23,3,L-23);ctx.fillRect(hw-3,-hl+23,3,L-23);
+  }else if(t==='bus'){
+    ctx.fillStyle=o.color;ctx.beginPath();ctx.roundRect(-hw,-hl,Wd,L,7);ctx.fill();
+    ctx.fillStyle='#f4f2ea';ctx.beginPath();ctx.roundRect(-hw+3.5,-hl+12,Wd-7,L-18,4);ctx.fill();
+    ctx.fillStyle=glass;ctx.beginPath();ctx.roundRect(-hw+2,-hl+2,Wd-4,8,3);ctx.fill();
+    ctx.fillStyle='rgba(18,26,34,.75)';ctx.fillRect(-hw,-hl+14,2.5,L-26);ctx.fillRect(hw-2.5,-hl+14,2.5,L-26);
+    ctx.fillStyle='#b9bcc0';ctx.beginPath();ctx.roundRect(-7,-hl+L*0.38,14,20,3);ctx.fill();
+    ctx.fillStyle='#9ea2a8';ctx.beginPath();ctx.arc(0,-hl+L*0.38+10,5,0,7);ctx.fill();
+    ctx.fillStyle=o.color;ctx.fillRect(-hw+3.5,hl-22,Wd-7,4);
+  }
+  ctx.fillStyle='#fff6c4';ctx.fillRect(-hw+2,-hl,5,3);ctx.fillRect(hw-7,-hl,5,3);
+  ctx.fillStyle=o.braking?'#ff2a2a':'#7d1d1d';ctx.fillRect(-hw+2,hl-3,5,3);ctx.fillRect(hw-7,hl-3,5,3);
+  if(o.braking){ctx.fillStyle='rgba(255,40,40,.35)';ctx.beginPath();ctx.arc(-hw+4,hl,6,0,7);ctx.arc(hw-4,hl,6,0,7);ctx.fill();}
+  if(o.signal&&blinkOn()){const sx=o.signal==='left'?-1:1;const ys=[-hl+2,hl-2];if(L>60)ys.push(0);
+    ctx.fillStyle='rgba(255,176,32,.35)';for(const y of ys){ctx.beginPath();ctx.arc(sx*(hw-1),y,9,0,7);ctx.fill();}
+    ctx.fillStyle='#ffb020';for(const y of ys){ctx.beginPath();ctx.arc(sx*(hw-1),y,3.5,0,7);ctx.fill();}}
+  ctx.restore();
+}
+function drawBay(g){const b=g.bay;
+  ctx.fillStyle=ROAD;ctx.beginPath();ctx.moveTo(W-1,b.y1+TAPER);ctx.lineTo(b.x1,b.y1);ctx.lineTo(b.x1,b.y0);ctx.lineTo(W-1,b.y0-TAPER);ctx.closePath();ctx.fill();
+  ctx.fillRect(W-7,b.y0-TAPER,6,b.y1-b.y0+2*TAPER);
+  ctx.fillStyle=PAINT;for(let y=b.y0-TAPER;y<b.y1+TAPER;y+=24)ctx.fillRect(W-6,y,2.5,12);
+  ctx.fillStyle='#8f949b';ctx.fillRect(b.x1,b.y0,4,b.y1-b.y0);
+}
+function slotBox(top,bot,target){
+  if(target){ctx.fillStyle='rgba(255,199,44,.18)';ctx.fillRect(W+1,top,BAYW-2,bot-top);}
+  ctx.strokeStyle=target?'#ffc72c':PAINT;ctx.lineWidth=3;ctx.strokeRect(W+1.5,top,BAYW-3,bot-top);
+  if(target){ctx.save();ctx.fillStyle='rgba(255,199,44,.7)';ctx.font='900 22px "Chakra Petch",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('P',W+BAYW/2,(top+bot)/2);ctx.restore();}
+}
+function drawPed(p){
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.atan2(p.vy,p.vx)+PI/2);
+  const s=Math.sin(p.ph)*4;
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(3,3,9,6,0,0,7);ctx.fill();
+  ctx.fillStyle='#262626';ctx.fillRect(-5,-3+s,3.5,7);ctx.fillRect(1.5,-3-s,3.5,7);
+  ctx.fillStyle=p.color;ctx.beginPath();ctx.ellipse(0,0,8.5,5,0,0,7);ctx.fill();
+  ctx.fillStyle='#2a1d14';ctx.beginPath();ctx.arc(0,0,4.2,0,7);ctx.fill();
+  ctx.restore();
+}
+function cone(x,y){ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(x+2,y+3,8,0,7);ctx.fill();
+  ctx.fillStyle='#ff6a13';ctx.beginPath();ctx.arc(x,y,7.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,4.5,0,7);ctx.fill();ctx.fillStyle='#ff6a13';ctx.beginPath();ctx.arc(x,y,2.2,0,7);ctx.fill();}
+function post(x,y){ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(x+4,y+5,16,0,7);ctx.fill();}
+function signText(t,x,y,size,color){ctx.fillStyle=color;ctx.font=`900 ${size}px "Noto Sans TC","Chakra Petch",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,x,y+1);}
+function stopSignAt(x,y){post(x,y);ctx.save();ctx.translate(x,y);ctx.beginPath();for(let i=0;i<8;i++){const a=PI/8+i*PI/4;ctx.lineTo(Math.cos(a)*17,Math.sin(a)*17);}ctx.closePath();
+  ctx.fillStyle='#fff';ctx.fill();ctx.beginPath();for(let i=0;i<8;i++){const a=PI/8+i*PI/4;ctx.lineTo(Math.cos(a)*14.5,Math.sin(a)*14.5);}ctx.closePath();ctx.fillStyle='#d52b1e';ctx.fill();ctx.restore();signText('停',x,y,16,'#fff');}
+function limitSign(x,y,t){post(x,y);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,16,0,7);ctx.fill();ctx.strokeStyle='#d52b1e';ctx.lineWidth=4;ctx.beginPath();ctx.arc(x,y,13.5,0,7);ctx.stroke();signText(t,x,y,13,'#111');}
+function endSign(x,y){post(x,y);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,16,0,7);ctx.fill();ctx.strokeStyle='#777';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,14,0,7);ctx.stroke();signText('40',x,y,12,'#999');ctx.strokeStyle='#333';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-10,y+10);ctx.lineTo(x+10,y-10);ctx.stroke();}
+function blueSign(x,y,t){post(x,y);ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(x-17,y-17,34,34,4);ctx.fill();ctx.fillStyle='#1f5fbf';ctx.beginPath();ctx.roundRect(x-15,y-15,30,30,3);ctx.fill();signText(t,x,y,10,'#fff');}
+function warnSign(x,y,t){post(x,y);ctx.save();ctx.translate(x,y);ctx.fillStyle='#d52b1e';ctx.beginPath();ctx.moveTo(0,-19);ctx.lineTo(19,15);ctx.lineTo(-19,15);ctx.closePath();ctx.fill();ctx.fillStyle='#ffc72c';ctx.beginPath();ctx.moveTo(0,-12);ctx.lineTo(13,11);ctx.lineTo(-13,11);ctx.closePath();ctx.fill();ctx.restore();signText(t,x,y+4,8,'#111');}
+
+function drawSignalHead(g){
+  const Lt=g.light;
+  ctx.strokeStyle='#5a6068';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(128,-120);ctx.lineTo(20,-116);ctx.stroke();
+  ctx.fillStyle='#4a4f56';ctx.beginPath();ctx.arc(128,-120,7,0,7);ctx.fill();
+  const n=g.L.arrow?4:3;
+  ctx.fillStyle='#121416';ctx.beginPath();ctx.roundRect(24,-126,14*n+6,20,4);ctx.fill();
+  const lamps=[['#ff3b2f','#3a1a18',Lt.r],['#ffc31f','#3a3218',Lt.y],['#2fe06b','#17331f',Lt.g]];
+  lamps.forEach(([on,off,v],i)=>{const x=34+i*14;if(v){ctx.fillStyle=on+'55';ctx.beginPath();ctx.arc(x,-116,11,0,7);ctx.fill();}ctx.fillStyle=v?on:off;ctx.beginPath();ctx.arc(x,-116,5.5,0,7);ctx.fill();});
+  if(g.L.arrow){const x=34+3*14;ctx.fillStyle='#10200f';ctx.beginPath();ctx.arc(x,-116,5.5,0,7);ctx.fill();
+    ctx.fillStyle=Lt.left?'#3cff78':'#23472b';ctx.beginPath();ctx.moveTo(x-4.5,-116);ctx.lineTo(x,-120);ctx.lineTo(x,-112);ctx.closePath();ctx.fill();ctx.fillRect(x-1,-117.2,5,2.4);}
+}
+function drawRail(){
+  const X=WORLD;
+  ctx.fillStyle='#6f685b';ctx.fillRect(-X,-34,2*X,68);
+  ctx.fillStyle='#4c3b2c';for(let x=-X;x<X;x+=18){if(Math.abs(x)<W)continue;ctx.fillRect(x,-24,8,48);}
+  ctx.fillStyle='#55595f';ctx.fillRect(-W,-30,2*W,60);
+  ctx.fillStyle='#c3c7cd';ctx.fillRect(-X,-14,2*X,3);ctx.fillRect(-X,11,2*X,3);
+}
+function drawRailOver(g){
+  const r=g.rail;
+  const arm=(px,py,dir)=>{ // dir: +1 for right side barrier pointing west
+    const ang=dir>0?PI-(1-r.arm)*PI/2:-(1-r.arm)*PI/2;const len=92;
+    ctx.save();ctx.translate(px,py);ctx.rotate(ang);
+    ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(3,-1,len,6);
+    ctx.fillStyle='#fff';ctx.fillRect(0,-3,len,6);ctx.fillStyle='#d52b1e';for(let i=0;i<len;i+=16)ctx.fillRect(i+8,-3,8,6);
+    ctx.restore();
+    ctx.fillStyle='#333';ctx.beginPath();ctx.arc(px,py,7,0,7);ctx.fill();};
+  arm(102,45,1);arm(-102,-45,-1);
+  const flash=g.alarm&&((performance.now()/300|0)%2===0);
+  for(const [x,y] of [[112,70],[-112,-70]]){
+    post(x,y);ctx.fillStyle='#fff';ctx.save();ctx.translate(x,y);
+    for(const a of [PI/4,-PI/4]){ctx.save();ctx.rotate(a);ctx.fillStyle='#fff';ctx.fillRect(-18,-4,36,8);ctx.strokeStyle='#d52b1e';ctx.lineWidth=1.5;ctx.strokeRect(-18,-4,36,8);ctx.restore();}
+    ctx.restore();
+    for(const s of [-1,1]){const on=g.alarm&&(flash===(s>0));ctx.fillStyle=on?'#ff2f24':'#4a1512';ctx.beginPath();ctx.arc(x+s*9,y+16,5,0,7);ctx.fill();
+      if(on){ctx.fillStyle='rgba(255,47,36,.3)';ctx.beginPath();ctx.arc(x+s*9,y+16,14,0,7);ctx.fill();}}
+  }
+  if(r.trainX!=null){
+    for(let k=0;k<4;k++){const x1=r.trainX-k*140,x0=x1-132;
+      ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(x0+4,-15,132,36);
+      ctx.fillStyle='#eef0ee';ctx.beginPath();ctx.roundRect(x0,-18,132,36,k===0?12:4);ctx.fill();
+      ctx.fillStyle='#1f5fbf';ctx.fillRect(x0+4,-4,124,8);
+      ctx.fillStyle='#ff8a1f';ctx.fillRect(x0+4,4,124,3);
+      ctx.fillStyle='rgba(30,40,55,.8)';for(let w=x0+10;w<x1-14;w+=18)ctx.fillRect(w,-14,10,6);
+      if(k===0){ctx.fillStyle='#223';ctx.fillRect(x1-14,-14,8,28);}
+    }
+  }
+}
+
+function blinkOn(){return (performance.now()/330|0)%2===0;}
+function zoom(){return clamp(Math.min(VW,VH)/640,0.62,1.5);}
+function updateCam(g,dt){const c=g.car;const look=110+Math.abs(c.v)*0.4;
+  const tx=c.x+Math.sin(c.a)*look,ty=c.y-Math.cos(c.a)*look;const k=1-Math.exp(-dt*3);cam.x+=(tx-cam.x)*k;cam.y+=(ty-cam.y)*k;}
+function render(g){
+  const L=g.L,z=zoom();
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle=GRASS;ctx.fillRect(0,0,VW,VH);
+  ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
+  const x0=cam.x-VW/2/z,x1=cam.x+VW/2/z,y0=cam.y-VH/2/z,y1=cam.y+VH/2/z;
+  const T=80;ctx.fillStyle='rgba(255,255,255,.035)';
+  for(let x=Math.floor(x0/T)*T;x<x1;x+=T)for(let y=Math.floor(y0/T)*T;y<y1;y+=T)if((((x/T)+(y/T))&1)===0)ctx.fillRect(x,y,T,T);
+  drawTrees(L,x0,x1,y0,y1);
+  drawRoads(L);
+  L.drawUnder&&L.drawUnder(g);
+  if(L.finishY!=null)finishLine(L.finishY);
+  for(const st of g.streams)for(const o of streamObjs(st))drawCar(o);
+  drawCar(g.car);
+  for(const p of g.peds)drawPed(p);
+  L.drawOver&&L.drawOver(g);
+  if(L.stopSign)stopSignAt(112,150);
+  if(g.light&&L.map==='cross')drawSignalHead(g);
+}
+
+/* ---------- HUD ---------- */
+const hud={spd:$('#hSpd'),speedo:$('#speedo'),sigL:$('#sigL'),sigR:$('#sigR'),info:$('#hInfo'),tl:$('#tl'),
+  lr:$('#tl .r'),ly:$('#tl .y'),lg:$('#tl .g'),la:$('#tl .a')};
+function updateHud(g){
+  const c=g.car,L=g.L,b=blinkOn();
+  hud.spd.textContent=Math.round(KMH(c.v));
+  hud.speedo.classList.toggle('over',!!(L.limit&&g.inZone&&KMH(c.v)>L.limit-2));
+  hud.sigL.classList.toggle('on',c.signal==='left'&&b);hud.sigR.classList.toggle('on',c.signal==='right'&&b);
+  if(g.light){hud.tl.classList.remove('hidden');hud.lr.classList.toggle('on',!!g.light.r);hud.ly.classList.toggle('on',!!g.light.y);hud.lg.classList.toggle('on',!!g.light.g);
+    hud.la.classList.toggle('hidden',!L.arrow);hud.la.classList.toggle('on',!!g.light.left);}
+  else hud.tl.classList.add('hidden');
+  const s=[];
+  if(L.stopLineY!=null&&!g.crossed)s.push(`距停止線 ${Math.max(0,distM(g)).toFixed(1)} m`);
+  if(L.info){const t=L.info(g);if(t)s.push(t);}
+  const txt=s.join('　');if(hud.info.textContent!==txt)hud.info.textContent=txt;
+  hud.info.style.display=txt?'':'none';
+}
+
+/* ---------- input ---------- */
+const keys={},touch={};
+const keyOn=k=>!!(keys[k]||touch[k]);
+const KEYMAP={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+function toggleSig(s){const c=G.car;c.signal=c.signal===s?null:s;c.sigA0=c.a;}
+function clearInput(){for(const k in keys)keys[k]=false;for(const k in touch)touch[k]=false;document.querySelectorAll('.touch .act').forEach(b=>b.classList.remove('act'));}
+addEventListener('keydown',e=>{
+  const k=KEYMAP[e.code];if(k){keys[k]=true;if(mode==='play')e.preventDefault();}
+  if(e.repeat)return;
+  const onBtn=document.activeElement&&document.activeElement.tagName==='BUTTON';
+  if(mode==='play'){
+    if(e.code==='KeyQ')toggleSig('left');
+    else if(e.code==='KeyE')toggleSig('right');
+    else if(e.code==='Escape'||e.code==='KeyP')pause();
+    else if(e.code==='KeyR')retry();
+    if(e.code==='Space')e.preventDefault();
+  }else if(mode==='pause'&&(e.code==='Escape'||e.code==='KeyP'))resume();
+  else if(mode==='intro'&&(e.code==='Enter'||e.code==='Space')&&!onBtn){e.preventDefault();startPlay();}
+  else if(mode==='result'&&e.code==='Enter'&&!onBtn){const p=$('#rBtns .btn');p&&p.click();}
+});
+addEventListener('keyup',e=>{const k=KEYMAP[e.code];if(k)keys[k]=false;});
+addEventListener('blur',clearInput);
+document.querySelectorAll('.touch button').forEach(b=>{
+  b.addEventListener('pointerdown',e=>{e.preventDefault();if(mode!=='play')return;
+    if(b.dataset.k){touch[b.dataset.k]=true;b.classList.add('act');try{b.setPointerCapture(e.pointerId);}catch(_){}}
+    else if(b.dataset.sig)toggleSig(b.dataset.sig);});
+  const up=()=>{if(b.dataset.k){touch[b.dataset.k]=false;b.classList.remove('act');}};
+  b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
+  b.addEventListener('contextmenu',e=>e.preventDefault());
+});
+
+/* ---------- screens ---------- */
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('show',s.id===id));
+  const s=id&&document.getElementById(id);if(s){const f=s.querySelector('.btn,.lv');f&&f.focus({preventScroll:true});}}
+function setMode(m){mode=m;$('#hud').classList.toggle('hidden',!(m==='play'||m==='ended'||m==='pause'));$('#touch').classList.toggle('hidden',m!=='play');if(m!=='play')clearInput();}
+function progText(){$('#progTxt').textContent=`已過關 ${cleared.size}／${LEVELS.length}`;$('#vehTxt').textContent=`目前：${VEHICLES[vehIdx].name}`;$('#lvCount').textContent=LEVELS.length;}
+function vStats(sp){let v=0,t=0;while(v<111.1&&t<30){v+=sp.acc*(1-v/(sp.maxV*1.15))*0.01;t+=0.01;}
+  return {t0:t,bd:(111.1*111.1)/(2*sp.brk)/10,len:sp.len/10,top:Math.round(sp.maxV*0.36)};}
+function drawPreview(cvs,sp){const w=cvs.clientWidth||200,h=64,d=Math.min(2,window.devicePixelRatio||1);cvs.width=w*d;cvs.height=h*d;
+  const pc=cvs.getContext('2d'),old=ctx;ctx=pc;pc.setTransform(d,0,0,d,0,0);
+  pc.fillStyle='#3c4046';pc.fillRect(0,0,w,h);pc.fillStyle=PAINT;for(let x=6;x<w;x+=28)pc.fillRect(x,h-7,14,2.5);
+  const sc=Math.min(1.25,(w-24)/sp.len);pc.translate(w/2,h/2-3);pc.scale(sc,sc);
+  drawCar({x:0,y:0,a:PI/2,len:sp.len,wid:sp.wid,type:sp.id,color:sp.color,player:true});ctx=old;}
+function buildVehicles(){const box=$('#vehList');box.innerHTML='';
+  const all=VEHICLES.map(vStats),maxT=Math.max(...all.map(a=>a.t0)),maxB=Math.max(...all.map(a=>a.bd)),maxL=Math.max(...all.map(a=>a.len));
+  VEHICLES.forEach((sp,i)=>{const st=all[i];const b=document.createElement('button');b.className='veh'+(i===vehIdx?' sel':'');
+    b.innerHTML=`${i===vehIdx?'<span class="tick">使用中</span>':''}<canvas></canvas><h4>${sp.name}</h4><p>${sp.desc}</p>
+    <dl><dt>起步 0→40</dt><div class="bar"><i style="width:${(st.t0/maxT*100).toFixed(0)}%"></i></div><dd>${st.t0.toFixed(1)} 秒</dd>
+    <dt>40 煞停距離</dt><div class="bar"><i style="width:${(st.bd/maxB*100).toFixed(0)}%;background:var(--bad)"></i></div><dd>${st.bd.toFixed(1)} m</dd>
+    <dt>車長</dt><div class="bar"><i style="width:${(st.len/maxL*100).toFixed(0)}%;background:var(--blue)"></i></div><dd>${st.len.toFixed(1)} m</dd>
+    <dt>最高時速</dt><div></div><dd>${st.top} km/h</dd></dl>`;
+    b.onclick=()=>{vehIdx=i;saveVeh();G=newGame(cur);buildVehicles();progText();const nb=$('#vehList').children[i];nb&&nb.focus({preventScroll:true});};
+    box.appendChild(b);});
+  requestAnimationFrame(()=>[...box.children].forEach((b,i)=>drawPreview(b.querySelector('canvas'),VEHICLES[i])));}
+function showVehicles(){show('scrVehicles');setMode('vehicles');buildVehicles();}
+function toMenu(){cur=0;G=newGame(0);progText();show('scrMenu');setMode('menu');}
+function buildLevels(){
+  const box=$('#lvList');box.innerHTML='';
+  for(const ch of [1,2,3]){
+    const sec=document.createElement('div');sec.className='chapter';sec.innerHTML=`<h3>${CHAPTERS[ch]}</h3>`;
+    const grid=document.createElement('div');grid.className='grid';
+    LEVELS.forEach((L,i)=>{if(L.chapter!==ch)return;const b=document.createElement('button');b.className='lv c'+ch;
+      b.innerHTML=`<b>${L.id}</b><span>${L.name}</span>${cleared.has(L.id)?'<i class="done" aria-label="已過關">✓</i>':''}`;
+      b.onclick=()=>loadLevel(i);grid.appendChild(b);});
+    sec.appendChild(grid);box.appendChild(sec);
+  }
+}
+function showLevels(){buildLevels();show('scrLevels');setMode('levels');}
+function loadLevel(i,direct){
+  cur=i;G=newGame(i);const L=G.L;
+  $('#hId').textContent=L.id;$('#hName').textContent=L.name;$('#hGoal').textContent=L.goal;
+  if(direct){startPlay();return;}
+  $('#iChap').textContent=CHAPTERS[L.chapter];$('#iId').textContent=L.id;$('#iName').textContent=L.name;$('#iGoal').textContent=L.goal;
+  $('#iRules').innerHTML=L.rules.map(r=>`<li>${r}</li>`).join('')+'<li>任何時候換車道都要先打方向燈，否則失敗</li>';
+  $('#iVeh').textContent=`駕駛車輛：${VEHICLES[vehIdx].name}（可在主選單更換）`;
+  show('scrIntro');setMode('intro');
+}
+function startPlay(){show(null);setMode('play');if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}
+function retry(){loadLevel(cur,true);}
+function pause(){if(mode!=='play')return;show('scrPause');setMode('pause');}
+function resume(){show(null);setMode('play');document.activeElement&&document.activeElement.blur&&document.activeElement.blur();}
+function quit(){show('scrBye');setMode('bye');try{window.close();}catch(e){}}
+function endLevel(g){
+  setMode('ended');
+  if(g.over==='win'){cleared.add(g.L.id);saveProg();}
+  setTimeout(()=>{if(G!==g)return;showResult(g);},650);
+}
+function showResult(g){
+  const win=g.over==='win',last=cur===LEVELS.length-1;
+  $('#rCard').className='card result '+(win?'win':'fail');
+  $('#rLv').textContent=`${g.L.id}　${g.L.name}`;
+  $('#rTitle').textContent=win?(last?'全部通關！':'過關！'):'失敗';
+  $('#rMsg').textContent=(win?'':'失敗原因：')+g.msg;
+  const btns=[];
+  if(win&&!last)btns.push(['下一關','next','']);
+  btns.push(['再試一次','retry',win&&!last?'plain':'']);
+  btns.push(['選擇關卡','levels','plain']);btns.push(['主選單','menu','plain']);
+  $('#rBtns').innerHTML=btns.map(([t,a,c])=>`<button class="btn center ${c}" data-act="${a}">${t}</button>`).join('');
+  show('scrResult');setMode('result');
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act;
+  if(a==='restart')loadLevel(0);
+  else if(a==='levels')showLevels();
+  else if(a==='vehicles')showVehicles();
+  else if(a==='quit')quit();
+  else if(a==='menu')toMenu();
+  else if(a==='resume')resume();
+  else if(a==='retry')retry();
+  else if(a==='next')loadLevel(Math.min(cur+1,LEVELS.length-1));
+});
+$('#btnStart').onclick=startPlay;
+$('#btnPause').onclick=pause;
+
+/* ---------- loop ---------- */
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(mode==='play'&&G&&!G.over){for(let i=0;i<2&&!G.over;i++)step(G,dt/2);}
+  if(G){updateCam(G,dt);render(G);if(mode==='play'||mode==='ended'||mode==='pause')updateHud(G);}
+  requestAnimationFrame(loop);
+}
+toMenu();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
