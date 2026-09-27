@@ -90,7 +90,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 
 .result h2{font-size:34px}
 .result.win h2{color:var(--good)} .result.fail h2{color:var(--bad)}
-.reason{background:rgba(213,43,30,.1);border-left:5px solid var(--bad);border-radius:8px;padding:12px 14px;font-weight:700;line-height:1.6}
+.reason{white-space:pre-line;background:rgba(213,43,30,.1);border-left:5px solid var(--bad);border-radius:8px;padding:12px 14px;font-weight:700;line-height:1.6}
 .result.win .reason{background:rgba(28,143,82,.12);border-color:var(--good)}
 
 .vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
@@ -131,6 +131,9 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 .goalbox .t .lvid{font-size:15px;padding:0 6px;border-width:1.5px}
 #hGoal{font-size:13px;color:#cfd7df;margin-top:4px;line-height:1.5}
 .hudbtns{margin-left:auto;display:flex;gap:6px}
+.toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.96);background:rgba(20,40,90,.9);color:#fff;border:2px solid #7fb0ff;border-radius:12px;padding:10px 16px;font-weight:700;font-size:15px;max-width:min(560px,86vw);text-align:center;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#hud.mirrors .goalbox{max-width:24vw}#hud.mirrors #hGoal{display:none}
 .actbtn{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 80px);pointer-events:auto;appearance:none;border:3px solid #111;border-radius:14px;background:var(--warn);color:#111;font:inherit;font-weight:900;font-size:18px;padding:12px 22px;cursor:pointer;box-shadow:0 5px 0 var(--warn-edge)}
 .actbtn:focus-visible{outline:3px solid #fff}
 @media (hover:none) and (pointer:coarse){.actbtn{bottom:calc(env(safe-area-inset-bottom,0px) + 70px)}}
@@ -218,11 +221,12 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="hud" class="hidden">
   <div class="hud-top">
     <div class="goalbox"><div class="t"><span class="lvid" id="hId">1-1</span><span id="hName"></span></div><div id="hGoal"></div></div>
-    <div class="hudbtns"><button class="hb" id="gBtn" aria-label="虛擬教練車示範" title="虛擬教練車"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="3 2.2"/><rect x="8.5" y="6.5" width="7" height="3" rx="1" fill="currentColor" opacity=".7"/></svg></button><button class="hb" id="zOut" aria-label="拉遠視角">−</button><button class="hb" id="zIn" aria-label="拉近視角">＋</button><button class="hb" id="btnPause" aria-label="暫停">II</button></div>
+    <div class="hudbtns"><button class="hb" id="mBtn" aria-label="後照鏡（自動／開／關）"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="9" rx="4" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M6 13.5l4-4M10 13.5l4-4" stroke="currentColor" stroke-width="1.4" opacity=".7"/><path d="M12 16v4" stroke="currentColor" stroke-width="1.9"/></svg></button><button class="hb" id="gBtn" aria-label="虛擬教練車示範" title="虛擬教練車"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="3 2.2"/><rect x="8.5" y="6.5" width="7" height="3" rx="1" fill="currentColor" opacity=".7"/></svg></button><button class="hb" id="zOut" aria-label="拉遠視角">−</button><button class="hb" id="zIn" aria-label="拉近視角">＋</button><button class="hb" id="btnPause" aria-label="暫停">II</button></div>
   </div>
   <div class="gpanel hidden" id="gPanel"><div class="gtop"><b>虛擬教練車</b><button class="gb" id="gReplay">⟲ 重播</button><button class="gb" id="gSpd">1×</button></div><div id="gCap"></div></div>
   <div class="tl hidden" id="tl"><i class="r"></i><i class="y"></i><i class="g"></i><i class="a hidden">←</i></div>
   <button class="actbtn hidden" id="actBtn"></button>
+  <div class="toast" id="toast" role="status"></div>
   <div class="hud-bottom">
     <div class="speedo" id="speedo"><span id="hSpd">0</span><small>km/h</small></div>
     <div class="sig"><span id="sigL">◀</span><span id="sigR">▶</span></div>
@@ -256,7 +260,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
       <button class="btn plain" data-act="ad">觀看廣告 <small>5 秒</small></button>
       <button class="btn red" data-act="quit">離開遊戲</button>
     </nav>
-    <div class="keys"><span class="kb">操作：<kbd>↑</kbd>/<kbd>W</kbd> 油門　<kbd>↓</kbd>/<kbd>S</kbd> 煞車（停住後按住倒車）　<kbd>←</kbd><kbd>→</kbd> 轉向　<kbd>Q</kbd>/<kbd>E</kbd> 左／右方向燈　<kbd>Space</kbd> 煞車　<kbd>Esc</kbd> 暫停　<kbd>＋</kbd><kbd>−</kbd> 視角　<kbd>G</kbd> 虛擬教練車示範。「畫面方向」操控時，按方向鍵就往畫面上那個方向開；往反方向按是煞車，停住後繼續按住就倒車</span><span class="tb">請橫放手機。左手蘑菇頭：往哪推，車子就往畫面上的哪個方向開；往車子反方向推是煞車，停住後繼續推就倒車。右手：左右方向燈，中間是煞車。（可在主選單改成「車頭方向」操控）</span></div>
+    <div class="keys"><span class="kb">操作：<kbd>↑</kbd>/<kbd>W</kbd> 油門　<kbd>↓</kbd>/<kbd>S</kbd> 煞車（停住後按住倒車）　<kbd>←</kbd><kbd>→</kbd> 轉向　<kbd>Q</kbd>/<kbd>E</kbd> 左／右方向燈　<kbd>Space</kbd> 煞車　<kbd>Esc</kbd> 暫停　<kbd>＋</kbd><kbd>−</kbd> 視角　<kbd>G</kbd> 虛擬教練車示範　<kbd>M</kbd> 後照鏡。「畫面方向」操控時，按方向鍵就往畫面上那個方向開；往反方向按是煞車，停住後繼續按住就倒車</span><span class="tb">請橫放手機。左手蘑菇頭：往哪推，車子就往畫面上的哪個方向開；往車子反方向推是煞車，停住後繼續推就倒車。右手：左右方向燈，中間是煞車。（可在主選單改成「車頭方向」操控）</span></div>
   </div>
 </section>
 
@@ -595,6 +599,12 @@ function blockReason(L,sp){
   if(sp.slow&&L.turnDir==='left')return ['腳踏車在路口左轉要採「兩段式左轉」，這關是汽機車的直接左轉，請換一台車挑戰。','none'];
   return null;}
 
+/* 超速寬限：處理細則第12條第1項第11款，超速未逾十公里得勸導、免予舉發 */
+function speedGate(g,k,lim,what,law){const key='ov'+lim;
+  if(k>lim+10.5){g.fail(`${what}：時速 ${Math.round(k)} km/h，速限 ${lim} km/h，超速 ${Math.round(k-lim)} 公里（已逾 10 公里，不適用勸導）。`,typeof law==='function'?law(k-lim):law);return true;}
+  if(k>lim+0.5){if(!g[key]){g[key]=true;g.warns=(g.warns||0)+1;if(g===G)toast(`👮 勸導：時速 ${Math.round(k)} km/h 超過速限 ${lim}，未逾 10 公里，這次免予舉發`);}}
+  else g[key]=false;return false;}
+
 /* ---------- helpers for turns ---------- */
 const SIG30=STOP_Y+300; // 30 m before the stop line
 const DBL=200;          // double white line (no lane change) length before the stop line
@@ -686,17 +696,17 @@ const LEVELS=[
  winMsg:'耐心等行人通過，做得好！'},
 
 {id:'2-3',chapter:2,name:'速限 40',map:'straight',finishY:-1560,start:{x:67.5,y:760},limit:40,
- goal:'進入速限區（紅圈 40 標誌）後，時速不能超過 40 km/h，並且要在時限內開到終點線（汽機車 28 秒；腳踏車時限較長）。',
- rules:['速限區內超過 40 km/h → 失敗','超過時限還沒到終點 → 失敗','開到終點線 → 過關'],
+ goal:'進入速限區（紅圈 40 標誌）後，時速不能超過 40 km/h（超速未逾 10 公里會被勸導、免予舉發），並且要在時限內開到終點線（汽機車 28 秒；腳踏車時限較長）。',
+ rules:['速限區內超速逾 10 公里（超過 50 km/h）→ 失敗；超速 10 公里以內只會被勸導','超過時限還沒到終點 → 失敗','開到終點線 → 過關'],
  update(g){const inZone=g.car.y<300&&g.car.y>-1500;g.inZone=inZone;const k=KMH(g.car.v);
-   if(inZone&&k>41)g.fail(`超速了！時速 ${Math.round(k)} km/h，這段路速限 40 km/h（超速 ${Math.round(k-40)} km/h）。`,k-40>40?'speedHigh':'speed');
+   if(inZone&&speedGate(g,k,40,'超速',d=>d>40?'speedHigh':'speed'))return;
    if(g.t>g.tl)g.fail(`超過 ${g.tl} 秒還沒到終點。開太慢也會影響後方交通。`,'none');},
  setup(g){const vm=g.car.spec.maxV*0.36;const ex=Math.max(0,g.car.len/2-22),dist=g.car.y+1560;g.tl=vm>=40?28+Math.ceil(ex/100):Math.ceil(dist/(g.car.spec.maxV*0.9)+g.car.spec.maxV/g.car.spec.acc)+6;},
  info:g=>`${g.inZone?'速限區內':g.car.y<=-1500?'已離開速限區':'前方速限 40'}　剩 ${Math.max(0,g.tl-g.t).toFixed(1)} 秒`,
  drawUnder(){ctx.save();ctx.fillStyle=PAINT;ctx.font='900 34px "Chakra Petch",sans-serif';ctx.textAlign='center';
    ctx.fillText('40',67.5,250);ctx.fillText('40',22.5,250);ctx.restore();},
  drawOver(){limitSign(W+26,300,'40');limitSign(-W-26,300,'40');endSign(W+26,-1500);},
- winMsg:g=>`用時 ${g.t.toFixed(1)} 秒，全程遵守速限！`},
+ winMsg:g=>`用時 ${g.t.toFixed(1)} 秒，${g.warns?'有輕微超速被勸導，下次注意！':'全程遵守速限！'}`},
 
 {id:'2-4',chapter:2,name:'施工變換車道',map:'straight',bikeAnyLane:true,finishY:-850,start:{x:67.5,y:760},
  goal:'外側車道前方施工。按 Q 打左轉方向燈換到內側車道；過了施工區，再按 E 打右轉方向燈回到外側車道，開到終點。',
@@ -1058,7 +1068,7 @@ const NEW_CH4=[
    g.cones=[];for(let i=0;i<=6;i++)g.cones.push([133-i*6.5,-1000-i*33]);for(let y=-1230;y>=-2600;y-=60)g.cones.push([92,y]);for(let i=1;i<=5;i++)g.cones.push([92+i*8,-2600-i*40]);
    g.coneObjs=g.cones.map(([x,y])=>({x,y,a:0,len:14,wid:14,msg:'撞到施工區的三角錐了！',law:'crash'}));},
  update(g,dt){const c=g.car,inZ=c.y<-1000&&c.y>-2800;g.inZone=inZ;g.obstacles.push(...g.coneObjs);
-   if(inZ&&KMH(c.v)>61)return g.fail(`施工區速限 60 km/h，你開到 ${Math.round(KMH(c.v))} km/h。`,'work');
+   if(inZ&&speedGate(g,KMH(c.v),60,'施工區超速','work'))return;
    hwRules(g,{minAfter:()=>!inZ&&c.y<-2900},dt);},
  info:g=>g.inZone?'施工區：速限 60':g.car.y>-1000?'前方外側車道封閉，提早併入中線':hwInfo(g),
  drawUnder(g){ctx.fillStyle='rgba(255,199,44,.18)';ctx.fillRect(92,-2800,43,1800);},
@@ -1070,7 +1080,7 @@ const NEW_CH4=[
  rules:['霧區超過 60 km/h → 失敗','跟車太近或追撞 → 失敗','換車道沒打方向燈 → 失敗'],
  setup(g){g.truck={x:67.5,y:-450,a:0,len:82,wid:28,type:'truck',color:'#6c7a89',v:70,msg:'在霧中追撞前方慢車！',law:'crash'};},
  update(g,dt){const c=g.car,t=g.truck;t.y-=t.v*dt;g.obstacles.push(t);g.ahead=[t];
-   if(c.y<600&&KMH(c.v)>61)return g.fail(`濃霧管制速限 60 km/h，你開到 ${Math.round(KMH(c.v))} km/h。`,'fwySpeed');
+   if(c.y<600&&speedGate(g,KMH(c.v),60,'濃霧管制超速','fwySpeed'))return;
    hwRules(g,{minAfter:()=>false},dt);},
  info:g=>g.car.y<600?`濃霧：速限 60　${hwInfo(g).split('　')[1]||''}`:'前方濃霧，準備減速',
  drawOver(g){drawCar(g.truck);hwSign(200,650,'霧區','60');},
@@ -1109,15 +1119,16 @@ const NEW_CH4=[
 
 {id:'4-8',chapter:4,name:'區間測速',map:'highway',highway:true,finishY:-4700,start:{x:67.5,y:900,v:240},
  goal:'前方是「區間測速」路段，速限 90 km/h。系統會計算你通過整段的平均速度，就算中途減速，平均超過 90 km/h 也會被開單。',
- rules:['區間平均時速超過 90 km/h → 失敗','任何時候超過 100 km/h → 失敗','換車道沒打方向燈、跟車太近 → 失敗'],
+ rules:['區間平均時速超速逾 10 公里 → 失敗（未逾 10 公里只勸導）','任何時候超速逾 10 公里 → 失敗','換車道沒打方向燈、跟車太近 → 失敗'],
  setup(g){hwStreams(g,[[67.5,240,[2.2,3.2]],[22.5,262,[3,4]],[112.5,230,[2,3.4]]]);},
  update(g,dt){const c=g.car;if(c.y<-500&&g.secT==null){g.secT=g.t;g.secY=c.y;}
    if(g.secT!=null&&!g.secDone){g.avg=((g.secY-c.y)/10)/Math.max(0.1,g.t-g.secT)*3.6;
-     if(c.y<-4500){g.secDone=true;if(g.avg>90.5)return g.fail(`區間平均時速 ${g.avg.toFixed(1)} km/h，超過速限 90 km/h。`,'fwySpeed');}}
+     if(c.y<-4500){g.secDone=true;if(g.avg>100.5)return g.fail(`區間平均時速 ${g.avg.toFixed(1)} km/h，超過速限 90 km/h 逾 10 公里。`,'fwySpeed');
+       if(g.avg>90.5){g.warns=(g.warns||0)+1;if(g===G)toast(`👮 勸導：區間平均 ${g.avg.toFixed(1)} km/h，超速未逾 10 公里，免予舉發`);}}}
    hwRules(g,{minAfter:()=>g.t>3},dt);},
  info:g=>g.secT!=null&&!g.secDone?`區間測速中　平均 ${(g.avg||0).toFixed(1)} km/h（限 90）`:g.secDone?'離開測速區':'前方區間測速　限 90',
  drawOver(){hwSign(200,-400,'區間','90');hwSign(200,-4550,'區間','終點');ctx.fillStyle='#8a8f96';ctx.fillRect(-10,-505,190,6);ctx.fillRect(-10,-4505,190,6);},
- winMsg:g=>`區間平均時速 ${g.avg.toFixed(1)} km/h，全程守法！`},
+ winMsg:g=>`區間平均時速 ${g.avg.toFixed(1)} km/h，${g.warns?'有輕微超速被勸導，下次注意！':'全程守法！'}`},
 ];
 
 /* ---------- 教練車：新關卡 ---------- */
@@ -1171,7 +1182,8 @@ const AP2={
  '4-8':(g)=>{cap(g,'區間測速：平均時速保持在 90 km/h 以下。');return D(g,LANE_N(67.5),acc(g,240));},
 };
 
-(function(){const ins=(after,arr)=>{const i=LEVELS.findIndex(l=>l.id===after);LEVELS.splice(i+1,0,...arr);};ins('1-4',NEW_CH1);ins('2-4',NEW_CH2);ins('3-4',NEW_CH3);ins('4-3',NEW_CH4);})();
+(function(){const ins=(after,arr)=>{const i=LEVELS.findIndex(l=>l.id===after);LEVELS.splice(i+1,0,...arr);};ins('1-4',NEW_CH1);ins('2-4',NEW_CH2);ins('3-4',NEW_CH3);ins('4-3',NEW_CH4);
+  for(const id of ['2-4','2-6','2-7','3-3','3-4','4-1','4-2','4-3','4-4','4-5','4-6','4-7','4-8'])LEVELS.find(l=>l.id===id).mirrors=true;})();
 
 /* ---------- 操作練習（駕訓班場地） ---------- */
 const PRACTICE=[
@@ -1316,7 +1328,7 @@ function inRamp(g,x,y,m){for(const r of g.ramps||[]){
 function hwLimit(g){return (g.car.spec.id==='truck'||g.car.spec.id==='bus')?90:100;}
 function hwInfo(g){const k=KMH(g.car.v),need=g.safeNeed||0;return `速限 ${hwLimit(g)}／最低 60　安全距離 ≥ ${need.toFixed(0)} m${g.gapM!=null?`（目前 ${g.gapM.toFixed(0)} m）`:''}`;}
 function hwRules(g,o,dt){const c=g.car,k=KMH(c.v);
-  if(k>hwLimit(g)+0.5)return g.fail(`超速：時速 ${Math.round(k)} km/h，${hwLimit(g)===90?'大型車':'小型車'}國道速限 ${hwLimit(g)} km/h。`,'fwySpeed');
+  if(speedGate(g,k,hwLimit(g),hwLimit(g)===90?'大型車國道超速':'小型車國道超速',d=>d>40?'speedHigh':'fwySpeed'))return;
   if(o.minAfter()&&c.x<135&&k<60){g.slowT=(g.slowT||0)+dt;if(g.slowT>(o.minGrace||3))return g.fail(`時速 ${Math.round(k)} km/h 低於國道最低速限 60 km/h 太久了。`,'fwySpeed');}else g.slowT=0;
   if(c.x>137&&!inRamp(g,c.x,c.y,0))return g.fail('車子開進路肩了。國道路肩平時禁止行駛。','fwyShoulder');
   // safe distance to the vehicle ahead in the same lane
@@ -1784,11 +1796,8 @@ function draw30m(){ctx.save();ctx.fillStyle='#ffc72c';for(let x=4;x<W-4;x+=14)ct
   ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillText('30m 前打方向燈',W+9,SIG30+2);ctx.fillStyle='#ffc72c';ctx.fillText('30m 前打方向燈',W+8,SIG30+1);ctx.restore();}
 function updateCam(g,dt){const gf=ghostOn&&g===G&&!g.moved&&mode==='play'?ghostFrame():null;const c=gf?{x:gf.x,y:gf.y,a:gf.a,v:120,spec:SEDAN}:g.car;const zt=zoomTarget();zoomCur=zoomCur?zoomCur+(zt-zoomCur)*(1-Math.exp(-dt*6)):zt;const look=(110+Math.abs(c.v)*0.4)*(c.spec.ship?8:c.spec.plane?2:c.spec.tiny?0.4:1);
   const fl=(gf?44:c.len)/2;cam.x=c.x+Math.sin(c.a)*fl;cam.y=c.y-Math.cos(c.a)*fl;} // 車頭固定在畫面正中央
-function render(g){
-  const L=g.L,z=zoom();
-  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle=GRASS;ctx.fillRect(0,0,VW,VH);
-  ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
-  const x0=cam.x-VW/2/z,x1=cam.x+VW/2/z,y0=cam.y-VH/2/z,y1=cam.y+VH/2/z;
+function drawScene(g,x0,x1,y0,y1,mirror){
+  const L=g.L;
   const T=80;ctx.fillStyle='rgba(255,255,255,.035)';
   for(let x=Math.floor(x0/T)*T;x<x1;x+=T)for(let y=Math.floor(y0/T)*T;y<y1;y+=T)if((((x/T)+(y/T))&1)===0)ctx.fillRect(x,y,T,T);
   drawTrees(g,x0,x1,y0,y1);
@@ -1797,18 +1806,44 @@ function render(g){
   L.drawUnder&&L.drawUnder(g);
   if(L.finishY!=null){if(L.map==='narrow'){ctx.save();ctx.beginPath();ctx.rect(-NW,L.finishY-20,2*NW,40);ctx.clip();finishLine(L.finishY);ctx.restore();}else finishLine(L.finishY);}
   for(const st of g.streams)for(const o of streamObjs(st))drawCar(o);
-  const ovl=L.night||L.fog;
-  if(g===G&&ghostOn&&!ovl)drawGhost();
+  if(!mirror&&g===G&&ghostOn&&!(L.night||L.fog))drawGhost();
   drawCar(g.car);
   for(const p of g.peds)drawPed(p);
   L.drawOver&&L.drawOver(g);
   if(L.stopSign)stopSignAt(112,150);
   if(g.light&&L.map==='cross')drawSignalHead(g);
-  if(L.tunnel&&L.drawOver){}
+}
+function render(g){
+  const L=g.L,z=zoom();
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle=GRASS;ctx.fillRect(0,0,VW,VH);
+  ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
+  const x0=cam.x-VW/2/z,x1=cam.x+VW/2/z,y0=cam.y-VH/2/z,y1=cam.y+VH/2/z;
+  drawScene(g,x0,x1,y0,y1,false);
+  const ovl=L.night||L.fog;
   if(ovl)drawOverlay(g);
   if(L.rain)drawRain();
-  if(ovl&&g===G&&ghostOn){const z=zoom();ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));drawGhost();}
+  if(ovl&&g===G&&ghostOn){ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));drawGhost();}
+  if(g===G&&mirrorsVisible(g))drawMirrors(g);
 }
+/* ---------- 後照鏡：左／正後／右 ---------- */
+const MKEY='drivingSchool.mirror.v1';let mirrorMode='auto';try{const m=localStorage.getItem(MKEY);if(m==='on'||m==='off'||m==='auto')mirrorMode=m;}catch(e){}
+function mirrorsVisible(g){if(!g||!(mode==='play'||mode==='ended'||mode==='pause'))return false;if(g.car.spec.tiny||g.car.spec.ship)return false;
+  if(mirrorMode==='off')return false;if(mirrorMode==='on')return true;return !!(g.L.mirrors||g.car.signal);}
+function mirrorLayout(){const ht=$('.hud-top'),top=ht?ht.getBoundingClientRect().top:10;const btnW=5*52+14,goalW=Math.min(VW*0.24,260)+14;
+  let tw=clamp(VW-2*Math.max(btnW,goalW)-16,0,460),y=top;if(tw<250){tw=clamp(VW*0.62,240,460);y=top+56;}
+  const gap=8,cw=tw*0.44,sw=(tw-cw-2*gap)/2,h=Math.max(46,cw*0.36),x0=VW/2-tw/2;
+  return [{k:'左',x:x0,w:sw,lc:-80,y,h},{k:'後',x:x0+sw+gap,w:cw,lc:0,y,h},{k:'右',x:x0+sw+gap+cw+gap,w:sw,lc:80,y,h}];}
+function drawMirrors(g){const c=g.car,L=g.L,sn=Math.sin(c.a),cs=Math.cos(c.a),rx=cs,ry=sn,fx=sn,fy=-cs;
+  for(const m of mirrorLayout()){const s=m.h/Math.max(240,c.len*2.2),Ox=m.x+m.w/2,Oy=m.y+m.h-3+c.len/2*s;
+    const a=s*rx,b=s*fx,cc=s*ry,d=s*fy,e=Ox-s*m.lc-(a*c.x+cc*c.y),f=Oy-(b*c.x+d*c.y);
+    ctx.setTransform(DPR,0,0,DPR,0,0);ctx.save();ctx.beginPath();ctx.roundRect(m.x,m.y,m.w,m.h,10);ctx.clip();ctx.fillStyle=GRASS;ctx.fillRect(m.x,m.y,m.w,m.h);
+    ctx.setTransform(DPR*a,DPR*b,DPR*cc,DPR*d,DPR*e,DPR*f);const R2=Math.max(420,c.len*3);drawScene(g,c.x-R2,c.x+R2,c.y-R2,c.y+R2,true);
+    ctx.setTransform(DPR,0,0,DPR,0,0);if(L.night||L.fog){ctx.fillStyle=L.night?'rgba(3,6,18,.62)':'rgba(214,219,224,.7)';ctx.fillRect(m.x,m.y,m.w,m.h);}
+    const gl=ctx.createLinearGradient(m.x,m.y,m.x+m.w,m.y+m.h);gl.addColorStop(0,'rgba(255,255,255,.16)');gl.addColorStop(0.5,'rgba(255,255,255,0)');ctx.fillStyle=gl;ctx.fillRect(m.x,m.y,m.w,m.h);ctx.restore();
+    ctx.lineWidth=4;ctx.strokeStyle='#1b1d21';ctx.beginPath();ctx.roundRect(m.x,m.y,m.w,m.h,10);ctx.stroke();ctx.lineWidth=1;ctx.strokeStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.roundRect(m.x+2.5,m.y+2.5,m.w-5,m.h-5,8);ctx.stroke();
+    ctx.font='900 11px "Noto Sans TC",sans-serif';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(m.x+6,m.y+5,16,15);ctx.fillStyle='#fff';ctx.fillText(m.k,m.x+8,m.y+7);}}
+function cycleMirror(){mirrorMode=mirrorMode==='auto'?'on':mirrorMode==='on'?'off':'auto';try{localStorage.setItem(MKEY,mirrorMode);}catch(e){}updMirrorBtn();toast(mirrorMode==='auto'?'後照鏡：自動（換車道的關卡或打方向燈時出現）':mirrorMode==='on'?'後照鏡：一直顯示':'後照鏡：關閉');}
+function updMirrorBtn(){const b=$('#mBtn');if(!b)return;b.classList.toggle('on',mirrorMode==='on');b.style.opacity=mirrorMode==='off'?.45:1;b.title='後照鏡：'+(mirrorMode==='auto'?'自動':mirrorMode==='on'?'開':'關');}
 let ovc=null;
 function drawOverlay(g){const L=g.L,c=g.car;if(!ovc)ovc=document.createElement('canvas');if(ovc.width!==cv.width||ovc.height!==cv.height){ovc.width=cv.width;ovc.height=cv.height;}
   const o=ovc.getContext('2d');o.setTransform(1,0,0,1,0,0);o.globalCompositeOperation='source-over';o.clearRect(0,0,ovc.width,ovc.height);
@@ -1970,7 +2005,9 @@ function toggleGhost(){ghostOn=!ghostOn;if(ghostOn)ghostStart();else ghost=null;
 /* ---------- HUD ---------- */
 const hud={spd:$('#hSpd'),speedo:$('#speedo'),sigL:$('#sigL'),sigR:$('#sigR'),info:$('#hInfo'),tl:$('#tl'),
   lr:$('#tl .r'),ly:$('#tl .y'),lg:$('#tl .g'),la:$('#tl .a')};
+let toastT=null;function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),2800);}
 function updateHud(g){
+  $('#hud').classList.toggle('mirrors',mirrorsVisible(g));
   {const ab=$('#actBtn'),t=g.action&&mode==='play'?g.action:'';ab.classList.toggle('hidden',!t);if(t&&ab.textContent!==t+'（F）')ab.textContent=t+'（F）';}
   const c=g.car,L=g.L,b=blinkOn();
   hud.spd.textContent=Math.round(KMH(c.v));
@@ -2002,6 +2039,7 @@ addEventListener('keydown',e=>{
     if(e.code==='Equal'||e.code==='NumpadAdd')setZoom(zoomIdx+1);
     else if(e.code==='Minus'||e.code==='NumpadSubtract')setZoom(zoomIdx-1);
     else if(e.code==='KeyG')toggleGhost();
+    else if(e.code==='KeyM')cycleMirror();
     else if(e.code==='KeyF'){if(G&&G.action&&G.doAction)G.doAction();}
     else if(e.code==='KeyQ')toggleSig('left');
     else if(e.code==='KeyE')toggleSig('right');
@@ -2104,7 +2142,7 @@ function loadLevel(i,direct,set){
   $('#hId').textContent=L.id;$('#hName').textContent=L.name;$('#hGoal').textContent=L.goal;
   if(direct){startPlay();return;}
   $('#iChap').textContent=L.practice?'操作練習　駕訓班場地':CHAPTERS[L.chapter];$('#iId').textContent=L.id;$('#iName').textContent=L.name;$('#iGoal').textContent=L.goal;
-  $('#iRules').innerHTML=L.rules.map(r=>`<li>${r}</li>`).join('')+'<li>任何時候換車道都要先打方向燈，否則失敗</li>';
+  $('#iRules').innerHTML=L.rules.map(r=>`<li>${r}</li>`).join('')+'<li>任何時候換車道都要先打方向燈，否則失敗</li>'+(L.mirrors?'<li>畫面上方有左／正後／右後照鏡，換車道前先看後方來車再切入</li>':'');
   $('#iVeh').textContent=`駕駛車輛：${VEHICLES[vehIdx].name}（可在主選單更換）`+(G.blocked?'　⚠️ '+G.blocked[0]:'');
   show('scrIntro');setMode('intro');
 }
@@ -2131,7 +2169,7 @@ function showResult(g){
   $('#rCard').className='card result '+(win?'win':'fail');
   $('#rLv').textContent=g.L.practice?`操作練習　${g.L.name}`:`${g.L.id}　${g.L.name}`;
   $('#rTitle').textContent=win?(g.L.practice?'通過！':last?'全部通關！':'過關！'):(g.L.practice?'不及格':'失敗');
-  $('#rMsg').textContent=(win?'':'失敗原因：')+g.msg;
+  $('#rMsg').textContent=(win?'':'失敗原因：')+g.msg+(win&&g.warns?`\n（途中被勸導 ${g.warns} 次：超速未逾 10 公里，依處理細則第12條第1項第11款免予舉發）`:'');
   const lw=!win&&g.law;$('#rLaw').classList.toggle('hidden',!lw);
   if(lw){$('#rLawD').textContent=lw.d;$('#rLawA').textContent=lw.a;$('#rLawF').textContent=lw.f;}
   const btns=[];
@@ -2161,7 +2199,7 @@ document.addEventListener('click',e=>{
 $('#btnStart').onclick=startPlay;
 $('#btnPause').onclick=pause;
 $('#actBtn').onclick=()=>{if(G&&G.action&&G.doAction&&mode==='play')G.doAction();};
-$('#gBtn').onclick=toggleGhost;$('#gReplay').onclick=()=>{if(ghost)ghost.t=0;else ghostStart();};$('#gSpd').onclick=()=>{gSpeed=gSpeed===1?2:gSpeed===2?4:1;updGhostUI();};
+$('#gBtn').onclick=toggleGhost;$('#mBtn').onclick=cycleMirror;updMirrorBtn();$('#gReplay').onclick=()=>{if(ghost)ghost.t=0;else ghostStart();};$('#gSpd').onclick=()=>{gSpeed=gSpeed===1?2:gSpeed===2?4:1;updGhostUI();};
 $('#zIn').onclick=()=>setZoom(zoomIdx+1);$('#zOut').onclick=()=>setZoom(zoomIdx-1);updZoomBtns();
 
 /* ---------- loop ---------- */

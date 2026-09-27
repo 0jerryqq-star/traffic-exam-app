@@ -1,5 +1,5 @@
 // 雞腿換駕照 service worker：網頁優先抓最新版，沒網路時用快取
-const CACHE = 'jitui-v7';
+const CACHE = 'jitui-v8';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
